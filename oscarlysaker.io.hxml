@@ -1,0 +1,7 @@
+-lib markdown
+-lib hxtemplo
+-cp src
+--interp
+-main Main
+-dce full
+-D eval-stack
