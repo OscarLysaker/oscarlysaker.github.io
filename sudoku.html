@@ -1,0 +1,2008 @@
+<!--
+    Source for fonts:
+    https://fonts.google.com/?preview.text=0123456789%20Sudoku&preview.text_type=custom
+
+    Imported fonts:
+    Open Sans: https://fonts.google.com/specimen/Open+Sans?preview.text=0123456789%20Sudoku&preview.text_type=custom&sidebar.open=true&selection.family=Open+Sans:ital,wght@0,300;0,400;0,600;0,700;0,800;1,300;1,400;1,600;1,700;1,800
+
+    / SUDOKU FUNCTIONS
+
+    
+
+-->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sudoku</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,600;0,700;0,800;1,300;1,400;1,600;1,700;1,800&display=swap" rel="stylesheet">
+
+    <script src="js/sudoku.js"></script>
+
+    <style>
+        :root {
+            --color-cell-default: white;
+            --color-cell-hover: gray;
+            --color-cell-highlight: rgb(189, 189, 189);
+            --color-cell-selected: rgb(157, 188, 212);
+            --color-cell-selected-highlight: rgb(218, 228, 236);
+            --color-cell-digit-highlight: rgb(157, 188, 212);
+            --color-cell-error-highlight: rgb(241, 221, 221);
+            --color-cell-error-highlight-selected: rgb(223, 188, 188);
+            --color-cell-error-digit-highlight: rgb(226, 170, 170);
+            --color-cell-error-digit-highlight-selected: rgb(207, 138, 138);
+
+            --color-digit-default: black;
+            --color-digit-error: rgb(163, 50, 50);
+            --color-digit-error-clue: rgb(114, 51, 51);
+
+            --font-open-sans: 'Open Sans', sans-serif;
+
+            --font-weight-digit-clue: 500;
+            --font-weight-digit-input: 300;
+            --font-weight-digit-highlight: 600;
+            --font-weight-digit-error: 600;
+        }
+
+        html {
+            font-family: var(--font-open-sans);
+            font-weight: 400;
+        }
+
+        h3 {
+            width:min-content;
+        }
+
+        .unselectable {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
+        /* Table Basic Styling */
+        #sudoku-root #sudoku-root-table {
+            width: 80vmin;
+            height:80vmin;
+            border-collapse: collapse;
+            border: 2px solid black;
+            table-layout: fixed;
+        }
+
+        #sudoku-root #sudoku-root-container {
+            width:min-content;
+            margin: auto;
+        }
+
+        #sudoku-root #sudoku-root-row, #sudoku-root #sudoku-root-cell { 
+            border: 1px solid black;
+        }
+
+        #sudoku-root #sudoku-root-row { 
+            height: calc(100%/9); 
+        }
+
+        #sudoku-root #sudoku-root-cell {
+            background-color: var(--color-cell-default);
+            width:calc(100%/9);
+            font-family: var(--font-open-sans);
+            font-weight: var(--font-weight-digit-input);
+            font-size: 5.6vmin;
+            color: var(--color-digit-default);
+        }
+
+        /* Base Cell Line Thickness*/
+        #sudoku-root #sudoku-root-row th:nth-of-type(3)[id=sudoku-root-cell],
+        #sudoku-root #sudoku-root-row th:nth-of-type(6)[id=sudoku-root-cell]
+        { border-right: 2px solid black; }
+
+        #sudoku-root tr[id=sudoku-root-row]:nth-of-type(3) #sudoku-root-cell, 
+        #sudoku-root tr[id=sudoku-root-row]:nth-of-type(6) #sudoku-root-cell 
+        { border-bottom: 2px solid black; }
+
+        /* Base Cell Interaction*/
+        #sudoku-root #sudoku-root-cell:hover {
+            cursor:pointer;
+            background-color: var(--color-cell-hover);
+        }
+
+        /*
+        /*      BASE CELL STATES
+        */
+
+        #sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-state="default"] {
+            background-color: var(--color-cell-default);
+        }
+        #sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-state="hover"] {
+            background-color: var(--color-cell-hover);
+        }
+        #sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-cell-highlight] {
+            background-color: var(--color-cell-selected-highlight);
+        }
+        #sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-digit-input] {
+            font-weight: var(--font-weight-digit-input);
+        }
+        #sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-cell-type="clue"] {
+            font-weight: var(--font-weight-digit-clue);
+        }
+        #sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-state="selected"] {
+            background-color: var(--color-cell-selected);
+            font-weight: var(--font-weight-digit-highlight);
+        }
+        #sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-digit-highlight] {
+            background-color: var(--color-cell-digit-highlight);
+            font-weight: var(--font-weight-digit-highlight);
+        }
+        #sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-cell-error-highlight] {
+            background-color: var(--color-cell-error-highlight);
+        }
+        #sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-digit-error] {
+            color: var(--color-digit-error);
+            font-weight: var(--font-weight-digit-error);
+            background-color: var(--color-cell-error-digit-highlight);
+        }
+        #sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-digit-error][data-sudoku-digit-clue] {
+            color: var(--color-digit-error-clue);
+            font-weight: var(--font-weight-digit-clue);
+            background-color: var(--color-cell-error-digit-highlight);
+        }
+
+        #sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-state="selected"][data-sudoku-cell-error-highlight] {
+            background-color: var(--color-cell-error-highlight-selected);
+        }
+        #sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-state="selected"][data-sudoku-digit-error] {
+            background-color: var(--color-cell-error-digit-highlight-selected);
+        }
+
+        #sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-cell-selection="multi"] {
+            background-color: var(--color-cell-selected-highlight);
+        }
+
+        #sudoku-button-toggle-pencil {
+            border: 2px solid black;
+            background-color: rgb(195, 206, 209);
+        }
+
+        #sudoku-button-toggle-pencil[data-toggle-active] {
+            border: 2px solid black;
+            background-color: rgb(90, 201, 118);
+        }
+
+        #sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-cell-type="pencil"] {
+            font-size: 2vmin;
+            color: black;
+            word-wrap: break-word;
+            font-weight: 500;
+        }
+
+        #sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-cell-arrow-highlight] {
+            border: 2px solid red;
+        }
+
+        #sudoku-root #sudoku-root-container .sudoku-button[data-sudoku-button-disabled] {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        #sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-cell-type="pencil"] span[data-sudoku-cell-pencil-highlight] {
+            opacity: 0.7;
+        }
+
+        #sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-cell-type="pencil"] span[data-sudoku-cell-pencil-highlight-digit] {
+            font-weight: 700;
+        }
+
+        /*
+        /*      INPUT BUTTONS
+        */
+
+        #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input {
+            margin: auto;
+            width:fit-content;
+            margin-top: 2vmin;
+        }
+
+        #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input .sudoku-button-input {
+            width: 8vmin;
+            height: 6vmin;
+            font-size: 2vmin;
+            font-weight: 600;
+            color: black;
+            border: none;
+            outline: none;
+            margin-right:8vmin;
+            background-color: white;
+            transition: background-color 0.3s ease-out;
+            border-radius: 20%;
+        }
+
+        #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input .sudoku-button-input:hover {
+            background-color: #bad4dbab;
+            cursor:pointer;
+        }
+
+        #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input .sudoku-button-input img {
+            width: 4vmin;
+            height: 4vmin;
+            margin: auto;
+            fill: red;
+        }
+
+        #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input .sudoku-button-input #sudoku-button-input-label {
+            width: 100%;
+            text-align: center;
+            position:relative;
+            top:-1.2vmin;
+        }
+
+        #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input .sudoku-button-input:last-child,
+        #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input .sudoku-button-input:last-child:hover,
+        #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input .sudoku-button-input:last-child:active,
+        #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input .sudoku-button-input:last-child:focus {
+            margin-right:0vmin;
+        }
+
+        /*
+        /*      NUMBER BUTTONS
+        */
+
+        #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input-numbers {
+            margin: auto;
+            width:fit-content;
+            margin-top: 4vmin;
+        }
+
+        #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input-numbers .sudoku-button-number-input,
+        #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input-numbers .sudoku-button-number-input:hover,
+        #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input-numbers .sudoku-button-number-input:active,
+        #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input-numbers .sudoku-button-number-input:focus {
+            width: 6vmin;
+            height: 6vmin;
+            font-size: 5vmin;
+            font-weight: 500;
+            color: rgb(19, 81, 110);
+            border: none;
+            outline: none;
+            border-radius: 20%;
+            margin-right:1vmin;
+            transition: background-color 0.3s ease-out, text-shadow 0.5s ease, color 0.3s ease;
+            background-color: white;
+            text-shadow: 0 0 0vmin #fff, 0 0 0vmin #fff, 0 0 0vmin #fff, 0 0 0vmin #fff;
+        }
+
+        #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input-numbers .sudoku-button-number-input:last-child,
+        #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input-numbers .sudoku-button-number-input:last-child:hover,
+        #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input-numbers .sudoku-button-number-input:last-child:active,
+        #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input-numbers .sudoku-button-number-input:last-child:focus {
+            margin-right:0vmin;
+        }
+
+        #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input-numbers .sudoku-button-number-input:hover {
+            background-color: #bad4dbab;
+            text-shadow: 0 0 0.4vmin #fff, 0 0 1vmin #fff, 0 0 1.8vmin #fff, 0 0 2.2vmin #fff;
+            color: rgb(56, 112, 138);
+            cursor: pointer;
+        }
+
+        /* Buttons */
+    </style>
+</head>
+<body>
+    <div id="sudoku-root"></div>
+
+    <script>
+
+//      +--------------------------+
+//      |      Preset Puzzles      |
+//      +--------------------------+
+
+        var samplePuzzles = {
+            "easy" : [
+                [0,6,0,0,8,0,4,2,0,
+                 0,1,5,0,6,0,3,7,8,
+                 0,0,0,4,0,0,0,6,0,
+                 1,0,0,6,0,4,8,3,0,
+                 3,0,6,0,1,0,7,0,5,
+                 0,8,0,3,5,0,0,0,0,
+                 8,3,0,9,4,0,0,0,0,
+                 0,7,2,1,3,0,9,0,0,
+                 0,0,9,0,2,0,6,1,0]
+            ]
+        }
+
+//      +---------------------------+
+//      |      Basic Variables      |
+//      +---------------------------+
+
+        // Element Access
+        let root = null;
+        let container = null;
+        let table = null;
+
+        // Cell arrays
+        var cells = [];
+        var cellsConflicting = [];
+
+        // Selectors
+        let selectedCell;
+        let multiSelect = [];
+
+        // Togglers
+        let pencilActive = false;
+
+        // Arrows movement
+        let arrowActive = false;
+        let arrowCell = null;
+
+        // Drag
+        let dragPrepared = false;
+        let dragging = false;
+
+        // Cells
+        let mouseOverCell = null;
+        let mouseOverRoot = false;
+
+//      +--------------------------+
+//      |      Enum Abstracts      |
+//      +--------------------------+
+
+        var CELL_ATTR = {
+            STATE : 'data-sudoku-state',
+            HIGHLIGHT : 'data-sudoku-cell-highlight',
+            VALUE : 'data-value',
+            POS_X : 'data-pos-x',
+            POS_Y : 'data-pos-y',
+            GROUP_INDEX : 'data-group-index',
+            DIGIT_HIGHLIGHT : 'data-sudoku-digit-highlight',
+            INPUT: 'data-sudoku-digit-input',
+            ERROR_HIGHLIGHT: 'data-sudoku-cell-error-highlight',
+            ERROR_DIGIT: 'data-sudoku-digit-error',
+            TYPE : 'data-sudoku-cell-type',
+            SELECTION : 'data-sudoku-cell-selection',
+            ARROW_HIGHLIGHT : 'data-sudoku-cell-arrow-highlight',
+            PENCIL_HIGHLIGHT : 'data-sudoku-cell-pencil-highlight',
+            PENCIL_HIGHLIGHT_DIGIT : 'data-sudoku-cell-pencil-highlight-digit'
+        }
+
+        var CELL_STATE = {
+            DEFAULT : 'default',
+            HOVER : 'hover',
+            SELECTED : 'selected'
+        };
+
+        let CELL_SELECTION = {
+            NONE : '',
+            SINGLE : 'single',
+            MULTI : 'multi'
+        }
+
+        let CELL_TYPE = {
+            NORMAL : 'normal',
+            PENCIL : 'pencil',
+            CLUE : 'clue',
+            EMPTY : 'empty'
+        }
+
+        let KEY_DOWN = {
+            SHIFT : false,
+            TAB : false,
+            CTRL : false
+        }
+
+//      +----------------------------+
+//      |      Button Variables      |
+//      +----------------------------+
+
+        let buttonSample = createButton("New Sample", "sudoku-button-temp-sample-set", null, () => {
+            console.log("Pressed sample button...");
+            initPuzzle(samplePuzzles.easy[0]);
+        });
+
+        let buttonReset = createButton("Reset", "sudoku-button-reset", null, () => {
+            console.log("Pressed reset button...");
+            reset();
+        });
+
+        let buttonEmpty = createButton("Empty Grid", "sudoku-button-empty", null, () => {
+            console.log("Pressed empty button...");
+            emptyGrid();
+        });
+
+        let buttonFillRandom = createButton("Fill Random", "sudoku-button-fill-random", null, () => {
+            console.log("Pressed fill random button...");
+            fillRandom();
+        });
+
+        let buttonDelete = createButton("Delete", "sudoku-button-delete", null, () => {
+            console.log("Pressed delete button...");
+            if (selectedCell != null) deleteDigit(true, true, true);
+        });
+
+        let buttonUndo = createButton("Undo", "sudoku-button-undo", null, () => {
+            logUndoAction();
+        });
+
+        let buttonRedo = createButton("Redo", "sudoku-button-redo", null, () => {
+            logRedoAction();
+        });
+
+        let buttonTogglePencil = createButton("Toggle Pencil", "sudoku-button-toggle-pencil", null, () => {
+            pencilModeToggle();
+        });
+
+        let buttonSolve = createButton("Solve", "sudoku-button-redo", null, () => {
+            solve();
+        });
+
+        let buttonTest = createButton("Test Button", "sudoku-test-button", "sudoku-button", () => {
+            console.log("Pressed new button...");
+        });
+
+//      +---------------------------------+
+//      |      Sudoku Initialization      |
+//      +---------------------------------+
+
+        function initSudokuInside (element=null) {
+            if (element == null) return;
+
+            root = element;
+
+            // Container
+            container = document.createElement("div");
+            container.setAttribute("id", "sudoku-root-container");
+            root.append(container);
+
+            // Create logo
+            let logo = document.createElement("h3");
+            logo.setAttribute("class", "unselectable");
+            logo.innerText = "Sudoku";
+            container.append(logo);
+
+            // Button container grid
+            let buttonContainerGrid = document.createElement("div");
+            buttonContainerGrid.setAttribute("id", "sudoku-root-container-buttons-grid");
+
+            // Add buttons
+            buttonContainerGrid.append(buttonSample);
+            buttonContainerGrid.append(buttonReset);
+            buttonContainerGrid.append(buttonEmpty);
+            buttonContainerGrid.append(buttonFillRandom);
+            buttonContainerGrid.append(buttonDelete);
+            buttonContainerGrid.append(buttonUndo);
+            buttonContainerGrid.append(buttonRedo);
+            buttonContainerGrid.append(buttonTogglePencil);
+            buttonContainerGrid.append(buttonSolve);
+            buttonContainerGrid.append(buttonTest);
+
+            container.append(buttonContainerGrid);
+
+            // Create Sudoku Table
+            table = document.createElement("table");
+            table.setAttribute("class", "unselectable");
+            table.setAttribute("id", "sudoku-root-table");
+
+            for(let y = 0; y < 9; y++) {
+                var tableRow = document.createElement("tr");
+                tableRow.setAttribute("id", "sudoku-root-row");
+                for(let x = 0; x < 9; x++) {
+                    var tableHeader = document.createElement("th");
+                    tableHeader.setAttribute("id", "sudoku-root-cell");
+                    setState(tableHeader, CELL_STATE.DEFAULT);
+                    tableHeader.setAttribute(CELL_ATTR.POS_X, x);
+                    tableHeader.setAttribute(CELL_ATTR.POS_Y, y);
+                    tableHeader.setAttribute(CELL_ATTR.GROUP_INDEX, Math.floor(y/3)*3 + Math.floor(x/3));
+                    tableHeader.setAttribute(CELL_ATTR.TYPE, CELL_TYPE.EMPTY);
+                    tableHeader.setAttribute(CELL_ATTR.SELECTION, CELL_SELECTION.NONE);
+                    (function(cell, onCellClicked){
+                        cell.addEventListener("click", () => {
+                            console.log("Clicked cell at: " + cell.getAttribute(CELL_ATTR.POS_X) + "x" + cell.getAttribute(CELL_ATTR.POS_Y));
+                            onCellClicked(cell);
+                        });
+                    })(tableHeader, onCellClicked);
+
+                    (function(cell, onCellPushed){
+                        cell.addEventListener("mousedown", () => {
+                            onCellPushed(cell);
+                        });
+                    })(tableHeader, onCellPushed);
+
+                    (function(cell){
+                        cell.addEventListener("mouseup", () => {
+                            if (dragPrepared) dragPrepared = false;
+                            if (dragging) dragging = false;
+                        });
+                    })(tableHeader);
+
+                    (function(cell, onCellOver){
+                        cell.addEventListener("mouseover", () => {
+                            onCellOver(cell);
+                        });
+                    })(tableHeader, onCellOver);
+
+                    (function(cell, onCellOut){
+                        cell.addEventListener("mouseout", () => {
+                            onCellOut(cell);
+                        });
+                    })(tableHeader, onCellOut);
+
+                    setCellValue(tableHeader, 0, false, false, false);
+                    cells.push(tableHeader);
+                    tableRow.append(tableHeader);
+                }
+                table.append(tableRow);
+            }
+            container.append(table);
+
+            // Button container settings
+            let buttonContainerInput = document.createElement("div");
+            buttonContainerInput.setAttribute("id", "sudoku-root-container-buttons-input");
+
+            let buttonInputUndo = createButtonInput("Undo", "svg/undo.svg", (button, e) => {
+                logUndoAction();
+            });
+
+            let buttonInputRedo = createButtonInput("Redo", "svg/redo.svg", (button, e) => {
+                logRedoAction();
+            });
+
+            let buttonInputDelete = createButtonInput("Delete", "svg/eraser.svg", (button, e) => {
+                deleteDigit();
+            });
+
+            let buttonInputPencil = createButtonInput("Pencil", "svg/pen-off.svg", (button, e) => {
+                if (pencilActive) document.querySelector('[src="svg/pen-on.svg"]').setAttribute("src", "svg/pen-off.svg");
+                else document.querySelector('[src="svg/pen-off.svg"]').setAttribute("src", "svg/pen-on.svg");
+                pencilModeToggle();
+            });
+
+            let buttonInputHint = createButtonInput("Hint", "svg/hint.svg", (button, e) => {
+                
+            });
+
+            buttonContainerInput.append(buttonInputUndo);
+            buttonContainerInput.append(buttonInputRedo);
+            buttonContainerInput.append(buttonInputDelete);
+            buttonContainerInput.append(buttonInputPencil);
+            buttonContainerInput.append(buttonInputHint);
+
+            container.append(buttonContainerInput);
+
+            // Button container input
+            let buttonContainerInputNumbers = document.createElement("div");
+            buttonContainerInputNumbers.setAttribute("id", "sudoku-root-container-buttons-input-numbers");
+
+            // Buttons
+            for (let i = 0; i < 9; i++) {
+                let buttonNum = document.createElement("button");
+                buttonNum.setAttribute("class", "sudoku-button-number-input");
+                buttonNum.innerText = String(i+1);
+                buttonNum.addEventListener("click", (button, e) => {
+                    let newType = CELL_TYPE.NORMAL;
+                    if (pencilActive) newType = CELL_TYPE.PENCIL;
+                    setCellValue(null, i+1, true, true, true, newType);
+                });
+                buttonContainerInputNumbers.append(buttonNum);
+            }
+
+            container.append(buttonContainerInputNumbers);
+
+            document.addEventListener("mouseup", () => {
+                onMouseReleased();
+            });
+
+            container.addEventListener("mouseout", () => {
+                mouseOverRoot = false;
+            });
+
+            container.addEventListener("mouseover", () => {
+                mouseOverRoot = true;
+            });
+
+            document.addEventListener("mousedown", () => {
+                onMousePressed();
+            });
+        }
+
+        function createButtonInput (label, imgSource, onClick) {
+            let inputButton = document.createElement("button");
+            inputButton.setAttribute("class", "sudoku-button-input");
+
+            let inputButtonIcon = document.createElement("img");
+            inputButtonIcon.setAttribute("src", imgSource);
+            inputButton.append(inputButtonIcon);
+
+            let inputButtonLabel = document.createElement("div");
+            inputButtonLabel.setAttribute("id", "sudoku-button-input-label");
+            inputButtonLabel.innerText = label;
+            inputButton.append(inputButtonLabel);
+
+            inputButton.addEventListener("click", (button, e) => {
+                onClick(button, e);
+            });
+
+            return inputButton;
+        }
+
+//      +--------------------------------+
+//      |      Interaction Handlers      |
+//      +--------------------------------+
+
+        function onCellClicked (cell) {
+            /*
+            if (multiSelect.length > 0) removeMultiSelect();
+
+            if (selectedCell != null) {
+                setState(selectedCell, CELL_STATE.DEFAULT);
+                removeHighlights();
+            }
+            
+            selectedCell = cell;
+            setState(selectedCell, CELL_STATE.SELECTED);
+
+            highlightCellsFor(selectedCell);
+            */
+        }
+
+        function onCellPushed (cell) {
+            dragPrepare(cell);
+
+            arrowRemove();
+            selectionRemoveAll();
+            removeHighlights();
+
+            selectSingleCell(cell);
+        }
+
+        function onMousePressed () {
+            if (!mouseOverRoot) {
+                selectionRemoveAll();
+                removeHighlights();
+            }
+        }
+
+        function onMouseReleased () {
+            dragEnd();
+        }
+
+        function onCellOver (cell) {
+            mouseOverCell = cell;
+            if (dragPrepared) dragBegin(selectedCell);
+            dragUpdate(cell);
+        }
+
+        function onCellOut (cell) {
+            if (mouseOverCell == cell) mouseOverCell = null;
+        }
+
+//      +-------------------------+
+//      |      Drag Handlers      |
+//      +-------------------------+
+
+        function dragPrepare (cell) {
+            dragPrepared = true;
+            console.log("Prepared drag at cell: " + cell.getAttribute(CELL_ATTR.POS_X) + "x" + cell.getAttribute(CELL_ATTR.POS_Y));
+        }
+
+        function dragBegin (firstCell) {
+            dragPrepared = false;
+            dragging = true;
+            console.log("Drag initiated!");
+            selectMultiBegin();
+            selectMultiAdd(firstCell);
+        }
+
+        function dragUpdate (cell) {
+            if (!dragPrepared && !dragging) return;
+            selectMultiAdd(cell);
+            console.log("Dragging over cell at: " + cell.getAttribute(CELL_ATTR.POS_X) + "x" + cell.getAttribute(CELL_ATTR.POS_Y));
+        }
+
+        function dragEnd () {
+            let wasDragging = dragging;
+            let wasPrepared = dragPrepared;
+            dragPrepared = false;
+            dragging = false;
+
+            if (wasPrepared) {
+                console.log("Ended drag preparation...");
+                removeMultiSelect();
+            }
+
+            if (wasDragging) {
+                console.log("Drag ended!");
+            }
+        }
+
+//      +------------------------------+
+//      |      Selection Handlers      |
+//      +------------------------------+
+
+        function selectionRemoveAll () {
+            selectionRemoveSingle();
+            selectionRemoveMulti();
+        }
+
+        function selectSingleCell (cell) {
+            selectionRemoveAll();
+            selectedCell = cell;
+            selectedCell.setAttribute(CELL_ATTR.STATE, CELL_STATE.SELECTED);
+            highlightCellsFor(selectedCell);
+            pencilUpdateHighlights();
+        }
+
+        function selectMultiAdd (cell) {
+            if (multiSelect.length == 0 || multiSelect.indexOf(cell) < 0) {
+                cell.setAttribute(CELL_ATTR.SELECTION, CELL_SELECTION.MULTI);
+                multiSelect.push(cell);
+            }
+        }
+
+        function selectMultiBegin () {
+            let tempCell = selectedCell;
+            selectionRemoveSingle();
+            removeHighlights();
+            if (tempCell != null) selectMultiAdd(tempCell);
+        }
+
+        function selectionRemoveSingle () {
+            if (selectedCell != null) {
+                selectedCell.setAttribute(CELL_ATTR.SELECTION, CELL_SELECTION.NONE);
+                selectedCell.setAttribute(CELL_ATTR.STATE, CELL_STATE.DEFAULT);
+                document.querySelectorAll('[' + CELL_ATTR.HIGHLIGHT + ']').forEach((value, key, parent) => {
+                    value.removeAttribute(CELL_ATTR.HIGHLIGHT);
+                });
+                selectedCell = null;
+            }
+        }
+
+        function selectionRemoveMulti () {
+            if (multiSelect.length > 0) {
+                multiSelect.forEach((value, key, parent) => {
+                    value.setAttribute(CELL_ATTR.SELECTION, CELL_SELECTION.NONE);
+                    value.setAttribute(CELL_ATTR.STATE, CELL_STATE.DEFAULT);
+                });
+                multiSelect = [];
+            }
+        }
+
+//      +--------------------------+
+//      |      Arrow Handlers      |
+//      +--------------------------+
+
+        function arrowMove (cellsX=0, cellsY=0) {
+            let newX = 0;
+            let newY = 0;
+            if (selectedCell == null && multiSelect.length == 0 && arrowCell == null) {
+                if (cellsX > 0) {
+                    newX = 0;
+                    newY = 4;
+                } else if (cellsX < 0) {
+                    newX = 8;
+                    newY = 4;
+                } else if (cellsY > 0) {
+                    newX = 4;
+                    newY = 0;
+                } else if (cellsY < 0) {
+                    newX = 4;
+                    newY = 8;
+                } else {
+                    return;
+                }
+            } else {
+                if (arrowCell == null) {
+                    if (selectedCell != null) {
+                        arrowCell = selectedCell;
+                    } else if (multiSelect.length > 0) {
+                        arrowCell = multiSelect[0];
+                    } else {
+                        return;
+                    }
+                }
+                newX = parseInt(arrowCell.getAttribute(CELL_ATTR.POS_X));
+                newY = parseInt(arrowCell.getAttribute(CELL_ATTR.POS_Y));
+                if (cellsX > 0) newX++;
+                else if (cellsX < 0) newX--;
+                else if (cellsY > 0) newY++;
+                else if (cellsY < 0) newY--;
+            }
+
+            if (newX > 8) newX = 0;
+            if (newX < 0) newX = 8;
+            if (newY > 8) newY = 0;
+            if (newY < 0) newY = 8;
+            
+            arrowSet(getCellAt(newX, newY));
+            if (selectedCell != null && multiSelect.length == 0 && KEY_DOWN.SHIFT) {
+                selectMultiBegin();
+                selectMultiAdd(arrowCell);
+            } else if (multiSelect.length > 0 && KEY_DOWN.SHIFT) {
+                selectMultiAdd(arrowCell);
+            } else {
+                selectSingleCell(arrowCell);
+            }
+        }
+
+        function arrowSet (cell) {
+            if (arrowCell != null) arrowRemove();
+
+            arrowCell = cell;
+            arrowCell.setAttribute(CELL_ATTR.ARROW_HIGHLIGHT, "");
+        }
+
+        function arrowRemove () {
+            if (arrowCell == null) return;
+
+            arrowCell.removeAttribute(CELL_ATTR.ARROW_HIGHLIGHT);
+            arrowCell = null;
+        }
+
+//      +---------------------------+
+//      |      Pencil Handlers      |
+//      +---------------------------+
+
+        function pencilModeToggle () {
+            if (pencilActive) pencilModeEnd();
+            else pencilModeStart();
+        }
+
+        function pencilModeStart () {
+            if (pencilActive) return;
+
+            pencilActive = true;
+            buttonTogglePencil.setAttribute("data-toggle-active", "");
+        }
+
+        function pencilModeEnd () {
+            if (!pencilActive) return;
+
+            pencilActive = false;
+            buttonTogglePencil.removeAttribute("data-toggle-active");
+        }
+
+        function checkPencilMarksOnInput (inputCell) {
+            
+        }
+
+        function pencilUpdateHighlights () {
+            // Remove highlight
+            document.querySelectorAll('[' + CELL_ATTR.TYPE + '=' + CELL_TYPE.PENCIL + ']').forEach((value, key, parent) => {
+                value.innerHTML = String(value.getAttribute(CELL_ATTR.VALUE));
+            });
+
+            // Update highlights
+            if (selectedCell != null && (selectedCell.getAttribute(CELL_ATTR.TYPE) != CELL_TYPE.NORMAL && selectedCell.getAttribute(CELL_ATTR.TYPE) != CELL_TYPE.CLUE)) return;
+            document.querySelectorAll('[' + CELL_ATTR.TYPE + ']').forEach((value, ket, parent) => {
+                console.log("Checking pencil cell...");
+                if (value.getAttribute(CELL_ATTR.TYPE) == CELL_TYPE.PENCIL) {
+                    let cellValue = "" + String(value.getAttribute(CELL_ATTR.VALUE));
+                    let selectedValue = "" + String(selectedCell.getAttribute(CELL_ATTR.VALUE));
+                    if (cellValue.indexOf(selectedValue) >= 0) {
+                        console.log("Cell has selected value!!");
+                        console.log("Found value " + selectedValue + " inside " + cellValue);
+
+                        value.innerHTML = "";
+
+                        let tempSpanLow = document.createElement("span");
+                        tempSpanLow.setAttribute(CELL_ATTR.PENCIL_HIGHLIGHT, "");
+
+                        let tempSpanHigh = document.createElement("span");
+                        tempSpanHigh.setAttribute(CELL_ATTR.PENCIL_HIGHLIGHT_DIGIT, "");
+                        tempSpanHigh.innerText = selectedValue;
+
+                        let splitValue = cellValue.split("");
+                        for (let x = 0; x < splitValue.length; x++) {
+                            if (splitValue[x] == selectedValue) {
+                                if (tempSpanLow.innerText != "") value.append(tempSpanLow);
+                                tempSpanLow = document.createElement("span");
+                                tempSpanLow.setAttribute(CELL_ATTR.PENCIL_HIGHLIGHT, "");
+                                value.append(tempSpanHigh);
+                            } else {
+                                tempSpanLow.append(splitValue[x]);
+                            }
+                        }
+
+                        if (tempSpanLow.innerText != "") value.append(tempSpanLow);
+
+                        //cellValue = cellValue.replace(selectedValue, String('<div id="' + CELL_ATTR.PENCIL_HIGHLIGHT + '">' + selectedValue + '</div>'));
+                        console.log("Modified cell value = " + cellValue);
+                        //value.innerHTML = cellValue;
+                        console.log("New pencil value = " + value.innerText);
+                    }
+                }
+            });
+        }
+
+//      +-------------------------+
+//      |      Grid Handlers      |
+//      +-------------------------+
+
+        function reset () {
+            console.log("Resetting sudoku puzzle...");
+            selectedCell = null;
+            for (let x = 0; x < cells.length; x++) {
+                let cell = cells[x];
+                setCellValue(cell, 0, false, false, false);
+                setState(cell, CELL_STATE.DEFAULT);
+                cell.setAttribute(CELL_ATTR.TYPE, CELL_TYPE.EMPTY);
+                removeAllAttributes(cell);
+            }
+            logReset();
+            console.log("Sudoku successfully reset!");
+        }
+
+        function emptyGrid () {
+            console.log("Emptying grid...");
+            selectedCell = null;
+            let pencilWasActive = pencilActive;
+            pencilModeEnd();
+            for (let i = 0; i < cells.length; i++) {
+                var cell = cells[i];
+                setCellValue(cell, 0, false, false, false);
+                setState(cell, CELL_STATE.DEFAULT);
+                cell.setAttribute(CELL_ATTR.TYPE, CELL_TYPE.EMPTY);
+                removeAllAttributes(cell);
+            }
+            if (pencilWasActive) pencilModeStart();
+            logReset();
+        }
+
+        function fillRandom () {
+            reset();
+            for (let i = 0; i < cells.length; i++) {
+                setCellValue(cells[i], Math.round(Math.random() * 9), false, false, false);
+            }
+        }
+
+//      +---------------------------+
+//      |      Button Handlers      |
+//      +---------------------------+
+
+        function createButton (label="New Button", id="", cl="", clickCallback=null) {
+            let newButton = document.createElement("button");
+            if (id != "") newButton.setAttribute("id", id);
+            if (cl != "") newButton.setAttribute("class", cl);
+            newButton.innerText = label;
+            if (clickCallback != null) newButton.addEventListener("click", clickCallback);
+            return newButton;
+        }
+
+//      +------------------------------+
+//      |      Attribute Handlers      |
+//      +------------------------------+
+
+        function removeAllAttributes (cell) {
+            cell.removeAttribute(CELL_ATTR.HIGHLIGHT);
+            cell.removeAttribute(CELL_ATTR.DIGIT_HIGHLIGHT);
+            cell.setAttribute(CELL_ATTR.TYPE, CELL_TYPE.EMPTY);
+            cell.removeAttribute(CELL_ATTR.INPUT);
+            cell.removeAttribute(CELL_ATTR.ERROR_DIGIT);
+            cell.removeAttribute(CELL_ATTR.ERROR_HIGHLIGHT);
+        }
+
+        function removeAllAttributesFromAllCells () {
+            for (i = 0; i < cells.length; i++) removeAllAttributes(cells[i]);
+        }
+
+//      +-----------------------------+
+//      |      Cell Manipulation      |
+//      +-----------------------------+
+
+        function setCellValue (cells, value, playerInput=false, checkErrors=false, log=false, forcedType=CELL_TYPE.EMPTY) {
+            
+            if (cells == null) {
+                if (selectedCell != null) cells = [selectedCell];
+                else if (multiSelect.length > 0) {
+                    cells = [];
+                    for (let i in multiSelect) {
+                        cells.push(multiSelect[i]);
+                    }
+                } else return;
+            }
+            
+            if (!Array.isArray(cells)) cells = [cells];
+
+            let affectedCells = [];
+            let previousValues = [];
+            let previousTypes = [];
+
+            let newValues = [];
+            let newTypes = [];
+
+            // New values
+            let newType = forcedType;
+            if (pencilActive && playerInput) newType = CELL_TYPE.PENCIL;
+            else if (value != 0 && !playerInput && forcedType != CELL_TYPE.PENCIL) newType = CELL_TYPE.NORMAL;
+            else if (value != 0 && playerInput && !pencilActive) newType = CELL_TYPE.NORMAL;
+            let newValue = value;
+            let newInnerText = value.toString();
+            if (newValue == 0) newInnerText = "";
+
+            for (let i = 0; i < cells.length; i++) {
+                let cell = cells[i];
+
+                // Clue cells can't be manipulated by player, skip
+                if (cell.getAttribute(CELL_ATTR.TYPE) == CELL_TYPE.CLUE && playerInput) continue;
+
+                // Temp values prone for manipulation
+                let tempNewType = newType;
+                let tempNewValue = newValue;
+                let tempNewInnerText = newInnerText;
+
+                // Current values
+                let currentType = cell.getAttribute(CELL_ATTR.TYPE);
+                let currentValue = cell.getAttribute(CELL_ATTR.VALUE);
+
+                // If value is 0 or previous value, delete value
+                if (tempNewValue == 0 || (tempNewValue == currentValue && currentType == tempNewType)) {
+                    tempNewType = CELL_TYPE.EMPTY;
+                    tempNewInnerText = "";
+                    tempNewValue = 0;
+                } else {
+                    // Check pencil
+                    if (tempNewType == CELL_TYPE.PENCIL && String(tempNewValue).length > 1) {
+                        console.log("Changing to multivalue of PENCIL cell: " + currentValue + " -> " + tempNewValue);
+                    } else if (tempNewType == CELL_TYPE.PENCIL && currentType == CELL_TYPE.PENCIL) {
+                        let valueArray = String(currentValue).split("");
+                        let canPlaceValue = true;
+                        tempNewInnerText = "";
+                        for (let x = 0; x < valueArray.length; x++) {
+                            let checkValue = valueArray[x];
+                            if (checkValue == tempNewValue) {
+                                canPlaceValue = false;
+                                continue;
+                            }
+                            if (checkValue > tempNewValue && canPlaceValue) {
+                                tempNewInnerText += String(tempNewValue);
+                                canPlaceValue = false;
+                            }
+                            tempNewInnerText += checkValue;
+                            if (x == valueArray.length - 1 && canPlaceValue) {
+                                tempNewInnerText += String(tempNewValue);
+                            }
+                        }
+                        tempNewValue = parseInt(tempNewInnerText);
+                    }
+                }
+
+                // Store values
+                affectedCells.push(cell);
+                previousValues.push(currentValue);
+                previousTypes.push(currentType);
+                newValues.push(tempNewValue);
+                newTypes.push(tempNewType);
+
+                // Apply values
+                cell.innerText = tempNewInnerText;
+                cell.setAttribute(CELL_ATTR.VALUE, tempNewValue);
+                console.log("Setting cell to [" + tempNewType + "] inside manipulation func...");
+                cell.setAttribute(CELL_ATTR.TYPE, tempNewType);
+
+                // If applied number, check if pencils should be removed
+                if (tempNewType == CELL_TYPE.NORMAL && playerInput) {
+                    let checkCells = [];
+                    
+                    let cellsRow = getCellRow(parseInt(cell.getAttribute(CELL_ATTR.POS_Y)));
+                    let cellsColumn = getCellColumn(parseInt(cell.getAttribute(CELL_ATTR.POS_X)));
+                    let cellsGroup = getCellGroup(parseInt(cell.getAttribute(CELL_ATTR.GROUP_INDEX)));
+
+                    console.log("Captured " + (cellsRow.length + cellsColumn.length + cellsGroup.length) + " cells...");
+
+                    for (let x = 0; x < cellsRow.length; x++) {
+                        if (checkCells.indexOf(cellsRow[x]) < 0 && cellsRow[x] != cell && cellsRow[x].getAttribute(CELL_ATTR.TYPE) == CELL_TYPE.PENCIL) checkCells.push(cellsRow[x]);
+                        if (checkCells.indexOf(cellsColumn[x]) < 0 && cellsColumn[x] != cell && cellsColumn[x].getAttribute(CELL_ATTR.TYPE) == CELL_TYPE.PENCIL) checkCells.push(cellsColumn[x]);
+                        if (checkCells.indexOf(cellsGroup[x]) < 0 && cellsGroup[x] != cell && cellsGroup[x].getAttribute(CELL_ATTR.TYPE) == CELL_TYPE.PENCIL) checkCells.push(cellsGroup[x]);
+                    }
+
+                    console.log("Checking " + checkCells.length + " cells...");
+
+                    for (let x = 0; x < checkCells.length; x++) {
+                        if (String(checkCells[x].getAttribute(CELL_ATTR.VALUE)).indexOf(String(tempNewValue)) < 0) continue;
+                        let checkCellValue = checkCells[x].getAttribute(CELL_ATTR.VALUE);
+                        
+                        affectedCells.push(checkCells[x]);
+                        previousValues.push(checkCellValue);
+                        previousTypes.push(checkCells[x].getAttribute(CELL_ATTR.TYPE));
+
+                        let checkCellNewInnerText = String(checkCellValue).replace(String(tempNewValue), "");
+
+                        if (checkCellNewInnerText == "") {
+                            newValues.push(0);
+                            newTypes.push(CELL_TYPE.EMPTY);
+
+                            checkCells[x].setAttribute(CELL_ATTR.VALUE, 0);
+                            checkCells[x].setAttribute(CELL_ATTR.TYPE, CELL_TYPE.EMPTY);
+                        } else {
+                            newValues.push(parseInt(checkCellNewInnerText));
+                            newTypes.push(CELL_TYPE.PENCIL);
+
+                            checkCells[x].setAttribute(CELL_ATTR.VALUE, parseInt(checkCellNewInnerText));
+                            checkCells[x].setAttribute(CELL_ATTR.TYPE, CELL_TYPE.PENCIL);
+                        }
+
+                        checkCells[x].innerText = checkCellNewInnerText;
+                    }
+                }
+
+                if (checkErrors) errorCheckCell(cell);
+            }
+
+            if (selectedCell != null) {
+                highlightCellsFor(selectedCell);
+                if (selectedCell.getAttribute(CELL_ATTR.TYPE) == CELL_TYPE.NORMAL) pencilUpdateHighlights();
+            }
+
+            if (log) logAction(HISTORY_TYPE.CELL_VALUE, affectedCells, previousValues, newValues, previousTypes, newTypes);
+        }
+
+        function setCellColor () {
+
+        }
+
+        function deleteDigit (playerInput=false, checkErrors=false, log=false) {
+            if (selectedCell == null && multiSelect.length == 0) return;
+            let cellsAffected = [];
+            if (selectedCell != null) cellsAffected = [selectedCell];
+            else cellsAffected = multiSelect;
+            setCellValue(cellsAffected, 0, playerInput, checkErrors, log, CELL_TYPE.EMPTY);
+        }
+
+//      +-----------------------------------+
+//      |      Cell Attribute Handlers      |
+//      +-----------------------------------+
+
+        function setState (cell, state) {
+            cell.setAttribute(CELL_ATTR.STATE, state);
+        }
+
+//      +-----------------------+
+//      |      Grid Access      |
+//      +-----------------------+
+
+        function getCellAt (x, y) {
+            return cells[y * 9 + x];
+        }
+
+        function getCellGroup (gIndex) {
+            let groupX = (gIndex%3)*3;
+            let groupY = Math.floor(gIndex/3)*3;
+            let result = [];
+
+            for (let x = 0; x < 3; x++) for (y = 0; y < 3; y++) {
+                result.push(cells[(groupY + y) * 9 + groupX + x]);
+            }
+
+            return result;
+        }
+
+        function getCellRow (yIndex) {
+            let result = [];
+            for (let x = 0; x < 9; x++) result.push(cells[yIndex * 9 + x]);
+            return result;
+        }
+
+        function getCellColumn (xIndex) {
+            let result = [];
+            for (let y = 0; y < 9; y++) result.push(cells[y * 9 + xIndex]);
+            return result;
+        }
+
+//      +------------------------------+
+//      |      Highlight Handlers      |
+//      +------------------------------+
+
+        function removeHighlights () {
+            for (let i = 0; i < cells.length; i++) {
+                cells[i].removeAttribute(CELL_ATTR.HIGHLIGHT);
+                cells[i].removeAttribute(CELL_ATTR.DIGIT_HIGHLIGHT);
+            }
+        }
+
+        function highlightCellsFor (cell) {
+            removeHighlights();
+
+            let cellType = cell.getAttribute(CELL_ATTR.TYPE);
+            if (cellType == CELL_TYPE.EMPTY || cellType == CELL_TYPE.PENCIL) return;
+            
+            var cellX = parseInt(cell.getAttribute(CELL_ATTR.POS_X));
+            var cellY = parseInt(cell.getAttribute(CELL_ATTR.POS_Y));
+
+            for (let x = 0; x < 9; x++) {
+                if (x == cellX) continue;
+                getCellAt(x, cellY).setAttribute(CELL_ATTR.HIGHLIGHT, "");
+            }
+
+            for (let y = 0; y < 9; y++) {
+                if (y == cellY) continue;
+                getCellAt(cellX, y).setAttribute(CELL_ATTR.HIGHLIGHT, "");
+            }
+
+            var groupX = Math.floor(cellX/3) * 3;
+            var groupY = Math.floor(cellY/3) * 3;
+
+            for (let x = 0; x < 3; x++) {
+                for (let y = 0; y < 3; y++) {
+                    if (cellX == groupX + x && cellY == groupY + y) continue;
+                    getCellAt(groupX + x, groupY + y).setAttribute(CELL_ATTR.HIGHLIGHT, "");
+                }
+            }
+
+            // Highlight digits
+            if (cell.getAttribute(CELL_ATTR.VALUE) != 0 && cell.getAttribute(CELL_ATTR.TYPE) != CELL_TYPE.PENCIL) {
+                let value = cell.getAttribute(CELL_ATTR.VALUE);
+                for (let i = 0; i < cells.length; i++) {
+                    let tempCell = cells[i];
+                    if (tempCell == cell) continue;
+                    if (tempCell.getAttribute(CELL_ATTR.TYPE) == CELL_TYPE.PENCIL) continue;
+                    if (tempCell.getAttribute(CELL_ATTR.VALUE) == value) {
+                        tempCell.setAttribute(CELL_ATTR.DIGIT_HIGHLIGHT, "");
+                    }
+                }
+            }
+        }
+
+//      +------------------+
+//      |      Events      |
+//      +------------------+
+
+        addEvent(document, "keypress", function (e) {
+            e = e || window.event;
+            // use e.keyCode
+
+            console.log(e.keyCode);
+
+            if (e.keyCode >= 48 && e.keyCode <= 57) { // Nums [0-9]
+                let after = e.keyCode - 48;
+                if (multiSelect.length > 1) {
+                    let cells = [];
+                    for (let i = 0; i < multiSelect.length; i++) {
+                        if (multiSelect[i].getAttribute(CELL_ATTR.TYPE) == CELL_TYPE.CLUE) continue;
+                        cells.push(multiSelect[i]);
+                    }
+                    //setValue(cells, after, true, true);
+                    setCellValue(cells, after, true, true, true);
+                } else if (selectedCell != null && selectedCell.getAttribute(CELL_ATTR.TYPE) != CELL_TYPE.CLUE) {
+                    //setValue(selectedCell, after, true, true);
+                    setCellValue(selectedCell, after, true, true, true);
+                    highlightCellsFor(selectedCell);
+                }
+            } else if (e.keyCode >= 37 && e.keyCode <= 40) {
+                switch (e.keyCode) {
+                    case 37:
+                        arrowMove(-1, 0);
+                        break;
+                    case 38:
+                        arrowMove(0, -1);
+                        break;
+                    case 39:
+                        arrowMove(1, 0);
+                        break;
+                    case 40:
+                        arrowMove(0, 1);
+                        break;
+                    default:
+                }
+            }
+        });
+
+        addEvent(document, "keydown", function (e) {
+            e = e || window.event;
+            // use e.keyCode
+
+            switch (e.key) {
+                case "Delete": // Delete
+                case "Backspace": // Backspace
+                    console.log("pressed delete...");
+                    deleteDigit(true, true, true);
+                    break;
+                case "p":
+                    pencilModeToggle();
+                    break;
+                case "r":
+                    reset();
+                    break;
+                case "z":
+                    if (KEY_DOWN.CTRL) logUndoAction();
+                    break;
+                case "y":
+                    if (KEY_DOWN.CTRL) logRedoAction();
+                    break;
+                case "Tab": KEY_DOWN.TAB = true; break;
+                case "Control": KEY_DOWN.CTRL = true; break;
+                case "Shift": KEY_DOWN.SHIFT = true; break;
+                default:
+            }
+
+            switch (e.keyCode) {
+                case 37:
+                    arrowMove(-1, 0);
+                    break;
+                case 38:
+                    arrowMove(0, -1);
+                    break;
+                case 39:
+                    arrowMove(1, 0);
+                    break;
+                case 40:
+                    arrowMove(0, 1);
+                    break;
+                default:
+                }
+        });
+
+        addEvent(document, "keyup", function (e) {
+            e = e || window.event;
+            // use e.keyCode
+
+            switch (e.key) {
+                case "Tab": KEY_DOWN.TAB = false; break;
+                case "Control": KEY_DOWN.CTRL = false; break;
+                case "Shift": KEY_DOWN.SHIFT = false; break;
+                default:
+            }
+        });
+
+        function addEvent(element, eventName, callback) {
+            if (element.addEventListener) {
+                element.addEventListener(eventName, callback, false);
+            } else if (element.attachEvent) {
+                element.attachEvent("on" + eventName, callback);
+            } else {
+                element["on" + eventName] = callback;
+            }
+        }
+
+//      +---------------------------+
+//      |      Puzzle Handlers      |
+//      +---------------------------+
+
+        function initPuzzle (puzzle) {
+            reset();
+            for (let i = 0; i < cells.length; i++) {
+                setCellValue(cells[i], puzzle[i]);
+                if (puzzle[i] != 0) {
+                    cells[i].setAttribute(CELL_ATTR.TYPE, CELL_TYPE.CLUE);
+                } else {
+                    cells[i].setAttribute(CELL_ATTR.INPUT, "");
+                }
+            }
+        }
+
+//      +--------------------------+
+//      |      Error Handlers      |
+//      +--------------------------+
+
+        function errorCheckCell (cell) {
+            // Check if cells previously had conflicts
+            if (cellsConflicting.length > 0) {
+                for (let i in cellsConflicting) {
+                    let conflictGroup = cellsConflicting[i];
+                    if (conflictGroup.cells.indexOf(cell) < 0) continue;
+                    if (cell.getAttribute(CELL_ATTR.VALUE) != conflictGroup.value) {
+                        conflictGroup.cells.splice(conflictGroup.cells.indexOf(cell), 1);
+                        cell.removeAttribute(CELL_ATTR.ERROR_DIGIT);
+                        let conflictResolved = true;
+                        if (conflictGroup.cells.length > 1) {
+                            conflictResolved = false;
+                            for (let i0 in conflictGroup.cells) {
+                                let cell0 = conflictGroup.cells[i0];
+                                let conflicting = false;
+                                for (let i1 in conflictGroup.cells) {
+                                    let cell1 = conflictGroup.cells[i1];
+                                    if (cell1 === cell0) continue;
+                                    conflicting = isConflicting(cell0, cell1);
+                                    if (conflicting) break;
+                                }
+                                if (!conflicting) {
+                                    conflictGroup.cells.splice(conflictGroup.cells.indexOf(cell0), 1);
+                                    cell0.removeAttribute(CELL_ATTR.ERROR_DIGIT);
+                                }
+                                if (conflictGroup.cells.length < 2) {
+                                    conflictResolved = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (conflictResolved) {
+                            for (let conflictCell in conflictGroup.cells) {
+                                conflictGroup.cells[conflictCell].removeAttribute(CELL_ATTR.ERROR_DIGIT);
+                            }
+                            cellsConflicting.splice(cellsConflicting.indexOf(conflictGroup), 1);
+                        }
+                    }
+                }
+            }
+
+            // Current cell checked
+            var cellValue = cell.getAttribute(CELL_ATTR.VALUE);
+            var cellX = parseInt(cell.getAttribute(CELL_ATTR.POS_X));
+            var cellY = parseInt(cell.getAttribute(CELL_ATTR.POS_Y));
+
+            if (cellValue != 0) {
+
+                var conflictingCells = [];
+
+                // Check vertical axis
+                for (let y = 0; y < 9; y++) {
+                    if (y == cellY) continue;
+                    let checkCell = getCellAt(cellX, y);
+                    if (checkCell.getAttribute(CELL_ATTR.VALUE) == cellValue && conflictingCells.indexOf(checkCell) < 0) {
+                        conflictingCells.push(checkCell);
+                    }
+                }
+
+                // Check horizontal axis
+                for (let x = 0; x < 9; x++) {
+                    if (x == cellX) continue;
+                    var checkCell = getCellAt(x, cellY);
+                    if (checkCell.getAttribute(CELL_ATTR.VALUE) == cellValue && conflictingCells.indexOf(checkCell) < 0) {
+                        conflictingCells.push(checkCell);
+                    }
+                }
+
+                // Check grouped axis
+                var groupX = Math.floor(cellX/3) * 3;
+                var groupY = Math.floor(cellY/3) * 3;
+                for (let x = 0; x < 3; x++) {
+                    for (let y = 0; y < 3; y++) {
+                        if (cellX == groupX + x && cellY == groupY + y) continue;
+                        let checkCell = getCellAt(groupX + x, groupY + y);
+                        if (checkCell.getAttribute(CELL_ATTR.VALUE) == cellValue && conflictingCells.indexOf(checkCell) < 0) {
+                            conflictingCells.push(checkCell);
+                        }
+                    }
+                }
+
+                if (conflictingCells.length != 0) {
+
+                    // Display potential conflicts
+                    conflictingCells.push(cell);
+                    var conflictStructure = {value : cellValue, cells : conflictingCells};
+                    cellsConflicting.push(conflictStructure);
+                    for(let i = 0; i < conflictingCells.length; i++) {
+                        conflictingCells[i].setAttribute(CELL_ATTR.ERROR_DIGIT, "");
+                    }
+                }
+
+            }
+
+            updateErrorHighlights();
+            checkIfFilled();
+        }
+
+        function checkForErrorsAfterInput () {
+
+            // Check if selected cell previously had conflicts
+            if (cellsConflicting.length > 0) {
+                for (let x in cellsConflicting) {
+                    let conflictGroup = cellsConflicting[x];
+                    if (conflictGroup.cells.indexOf(selectedCell) < 0) continue;
+                    if (selectedCell.getAttribute(CELL_ATTR.VALUE) != conflictGroup.value) {
+                        conflictGroup.cells.splice(conflictGroup.cells.indexOf(selectedCell), 1);
+                        selectedCell.removeAttribute(CELL_ATTR.ERROR_DIGIT);
+                        let conflictResolved = true;
+                        if (conflictGroup.cells.length > 1) {
+                            conflictResolved = false;
+                            for (let i0 in conflictGroup.cells) {
+                                let cell0 = conflictGroup.cells[i0];
+                                let conflicting = false;
+                                for (let i1 in conflictGroup.cells) {
+                                    let cell1 = conflictGroup.cells[i1];
+                                    if (cell1 === cell0) continue;
+                                    conflicting = isConflicting(cell0, cell1);
+                                    if (conflicting) break;
+                                }
+                                if (!conflicting) {
+                                    conflictGroup.cells.splice(conflictGroup.cells.indexOf(cell0), 1);
+                                    cell0.removeAttribute(CELL_ATTR.ERROR_DIGIT);
+                                }
+                                if (conflictGroup.cells.length < 2) {
+                                    conflictResolved = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (conflictResolved) {
+                            for (let conflictCell in conflictGroup.cells) {
+                                conflictGroup.cells[conflictCell].removeAttribute(CELL_ATTR.ERROR_DIGIT);
+                            }
+                            cellsConflicting.splice(cellsConflicting.indexOf(conflictGroup), 1);
+                        }
+                    }
+                }
+            }
+
+            var lastInput = selectedCell.getAttribute(CELL_ATTR.VALUE);
+            var selectedX = parseInt(selectedCell.getAttribute(CELL_ATTR.POS_X));
+            var selectedY = parseInt(selectedCell.getAttribute(CELL_ATTR.POS_Y));
+            
+            if (lastInput != 0) {
+
+                var conflictingCells = [];
+
+                // Check vertical axis
+                for (let y = 0; y < 9; y++) {
+                    if (y == selectedY) continue;
+                    let checkCell = getCellAt(selectedX, y);
+                    if (checkCell.getAttribute(CELL_ATTR.VALUE) == lastInput && conflictingCells.indexOf(checkCell) < 0) {
+                        conflictingCells.push(checkCell);
+                    }
+                }
+
+                // Check horizontal axis
+                for (let x = 0; x < 9; x++) {
+                    if (x == selectedX) continue;
+                    var checkCell = getCellAt(x, selectedY);
+                    if (checkCell.getAttribute(CELL_ATTR.VALUE) == lastInput && conflictingCells.indexOf(checkCell) < 0) {
+                        conflictingCells.push(checkCell);
+                    }
+                }
+
+                // Check grouped axis
+                var groupX = Math.floor(selectedX/3) * 3;
+                var groupY = Math.floor(selectedY/3) * 3;
+                for (let x = 0; x < 3; x++) {
+                    for (let y = 0; y < 3; y++) {
+                        if (selectedX == groupX + x && selectedY == groupY + y) continue;
+                        let checkCell = getCellAt(groupX + x, groupY + y);
+                        if (checkCell.getAttribute(CELL_ATTR.VALUE) == lastInput && conflictingCells.indexOf(checkCell) < 0) {
+                            conflictingCells.push(checkCell);
+                        }
+                    }
+                }
+
+                if (conflictingCells.length != 0) {
+
+                    // Display potential conflicts
+                    conflictingCells.push(selectedCell);
+                    var conflictStructure = {value : lastInput, cells : conflictingCells};
+                    cellsConflicting.push(conflictStructure);
+                    for(let i = 0; i < conflictingCells.length; i++) {
+                        conflictingCells[i].setAttribute(CELL_ATTR.ERROR_DIGIT, "");
+                    }
+                }
+            
+            }
+            
+            updateErrorHighlights();
+            checkIfFilled();
+        }
+
+        function isConflicting (cell0, cell1) {
+            // Check value
+            if (cell0.getAttribute(CELL_ATTR.VALUE) !== cell1.getAttribute(CELL_ATTR.VALUE)) return false;
+
+            // Check vertical & horizontal
+            if (cell0.getAttribute(CELL_ATTR.POS_X) == cell1.getAttribute(CELL_ATTR.POS_X)) return true;
+            if (cell0.getAttribute(CELL_ATTR.POS_Y) == cell1.getAttribute(CELL_ATTR.POS_Y)) return true;
+
+            //Check group
+            if (cell0.getAttribute(CELL_ATTR.GROUP_INDEX) == cell1.getAttribute(CELL_ATTR.GROUP_INDEX)) return true;
+
+            return false;
+        }
+
+//      +----------------------------+
+//      |      Error Highlights      |
+//      +----------------------------+
+
+        function updateErrorHighlights () {
+            let existing = document.querySelectorAll('[' + CELL_ATTR.ERROR_HIGHLIGHT + ']');
+            for (let i = 0; i < existing.length; i++) {
+                existing.item(i).removeAttribute(CELL_ATTR.ERROR_HIGHLIGHT);
+            }
+
+            existing = document.querySelectorAll('[' + CELL_ATTR.ERROR_DIGIT + ']');
+            for (let i = 0; i < existing.length; i++) {
+                existing.item(i).removeAttribute(CELL_ATTR.ERROR_DIGIT);
+            }
+
+            let groups = [];
+            let rows = [];
+            let columns = [];
+
+            for (let value = 1; value < 9; value++) {
+                let valueCells = document.querySelectorAll('[' + CELL_ATTR.VALUE + '="' + value + '"]');
+                for (let i0 = 0; i0 < valueCells.length; i0++) {
+                    let cell0 = valueCells.item(i0);
+                    if (cell0.getAttribute(CELL_ATTR.TYPE) == CELL_TYPE.PENCIL) continue;
+                    for (let i1 = 0; i1 < valueCells.length; i1++) {
+                        if (i0 == i1) continue;
+                        let cell1 = valueCells.item(i1);
+                        if (cell1.getAttribute(CELL_ATTR.TYPE) == CELL_TYPE.PENCIL) continue;
+                        let foundConflict = false;
+                        if (cell0.getAttribute(CELL_ATTR.GROUP_INDEX) == cell1.getAttribute(CELL_ATTR.GROUP_INDEX)) {
+                            let groupIndex = cell0.getAttribute(CELL_ATTR.GROUP_INDEX);
+                            if (groups.indexOf(groupIndex) < 0) groups.push(groupIndex);
+                            foundConflict = true;
+                        }
+                        if (cell0.getAttribute(CELL_ATTR.POS_X) == cell1.getAttribute(CELL_ATTR.POS_X)) {
+                            let columnIndex = cell0.getAttribute(CELL_ATTR.POS_X);
+                            if (columns.indexOf(columnIndex) < 0) columns.push(columnIndex);
+                            foundConflict = true;
+                        }
+                        if (cell0.getAttribute(CELL_ATTR.POS_Y) == cell1.getAttribute(CELL_ATTR.POS_Y)) {
+                            let rowIndex = cell0.getAttribute(CELL_ATTR.POS_Y);
+                            if (rows.indexOf(rowIndex) < 0) rows.push(rowIndex);
+                            foundConflict = true;
+                        }
+                        if (foundConflict) {
+                            cell0.setAttribute(CELL_ATTR.ERROR_DIGIT, "");
+                            cell1.setAttribute(CELL_ATTR.ERROR_DIGIT, "");
+                        }
+                    }
+                }
+            }
+
+            // Highlight groups
+            for (let i in groups) {
+                let groupIndex = parseInt(groups[i]);
+
+                let groupX = (groupIndex%3)*3;
+                let groupY = Math.floor(groupIndex/3)*3;
+
+                for (let x = 0; x < 3; x++) {
+                    for (let y = 0; y < 3; y++) {
+                        getCellAt(groupX + x, groupY + y).setAttribute(CELL_ATTR.ERROR_HIGHLIGHT, "");
+                    }
+                }
+            }
+
+            // Highlight rows
+            for (let i in rows) {
+                let rowIndex = parseInt(rows[i]);
+                for (let x = 0; x < 9; x++) {
+                    getCellAt(x, rowIndex).setAttribute(CELL_ATTR.ERROR_HIGHLIGHT, "");
+                }
+            }
+
+            // Highlight rows
+            for (let i in columns) {
+                let columnIndex = parseInt(columns[i]);
+                for (let y = 0; y < 9; y++) {
+                    getCellAt(columnIndex, y).setAttribute(CELL_ATTR.ERROR_HIGHLIGHT, "");
+                }
+            }
+        }
+
+        function checkIfFilled () {
+            for (let x in cells) {
+                let cell = cells[x];
+                if (cell.getAttribute(CELL_ATTR.VALUE) == 0) {
+                    return;
+                }
+            }
+
+            if (cellsConflicting.length > 0) {
+                return;
+            }
+
+            alert("You did it! Puzzle solved!");
+        }
+
+        
+//      +-------------------+
+//      |      History      |
+//      +-------------------+
+
+
+        var historyCurrentIndex = -1;
+        let history = [];
+        var HISTORY_TYPE = {
+            CELL_VALUE : 'changed-multi-value'
+        }
+
+        function logReset () {
+            history = [];
+            historyCurrentIndex = -1;
+        }
+
+        function logIsEmpty () { return historyCurrentIndex == -1; }
+
+        function logGetCurrent () {
+            if (historyCurrentIndex == -1) return null;
+            return history[historyCurrentIndex + 1];
+        }
+
+        function logAction (_logType, cells, valuesBefore, valuesAfter, typesBefore, typesAfter) {
+            let historyStructure = {logType:_logType}
+            let doLogNewStructure = false;
+            switch (_logType) {
+                case HISTORY_TYPE.CELL_VALUE:
+                    let affectedCells = [];
+                    let newValuesBefore = [];
+                    let newValuesAfter = [];
+                    let newTypesBefore = [];
+                    let newTypesAfter = [];
+                    //alert("Registering multiselect log with " + cell.length + " cells and " + before.length + " previous values...");
+                    for (let i = 0; i < cells.length; i++) {
+                        if (valuesBefore[i] == valuesAfter[i] && typesBefore[i] == typesAfter[i]) continue;
+                        affectedCells.push(cells[i]);
+                        newValuesBefore.push(valuesBefore[i]);
+                        newTypesBefore.push(typesBefore[i]);
+                        newValuesAfter.push(valuesAfter[i]);
+                        newTypesAfter.push(typesAfter[i]);
+                    }
+                    //alert("After filter logged with " + affectedCells.length + " cells and " + newBefore.length + " previous values...");
+                    historyStructure.cells = affectedCells;
+                    historyStructure.valuesBefore = newValuesBefore;
+                    historyStructure.typesBefore = newTypesBefore;
+                    historyStructure.valuesAfter = newValuesAfter;
+                    historyStructure.typesAfter = newTypesAfter;
+                    doLogNewStructure = true;
+                    break;
+                default:
+            }
+
+            if (doLogNewStructure) {
+
+                if (history.length != 0 && historyCurrentIndex < history.length - 1) {
+                    history.splice(historyCurrentIndex + 1, history.length - historyCurrentIndex - 1);
+                }
+
+                history.push(historyStructure);
+                historyCurrentIndex = history.length - 1;
+            }
+        }
+        function logUndoAction () {
+            if (historyCurrentIndex == -1) return;
+            
+            let action = history[historyCurrentIndex];
+
+            switch (action.logType) {
+                case HISTORY_TYPE.CELL_VALUE:
+                    //alert("Attempting to undo multi-select of " + action.cells.length + " cells...");
+                    for(let i = 0; i < action.cells.length; i++) {
+                        //alert("Setting cell " + i + " to previous value " + action.before[i] + "...");
+                        setCellValue(action.cells[i], action.valuesBefore[i], false, true, false, action.typesBefore[i]);
+                    }
+                    historyCurrentIndex--;
+                    return;
+                default:
+            }
+        }
+
+        function logRedoAction () {
+            if (historyCurrentIndex == history.length - 1) return;
+
+            let action = history[historyCurrentIndex + 1];
+
+            switch (action.logType) {
+                case HISTORY_TYPE.CELL_VALUE:
+                    historyCurrentIndex++;
+                    for (let i = 0; i < action.cells.length; i++) {
+                        console.log("Setting cell to type " + action.typesAfter[i]);
+                        setCellValue(action.cells[i], action.valuesAfter[i], false, true, false, action.typesAfter[i]);
+                    }
+                    return;
+                default:
+            }
+        }
+
+//      +------------------+
+//      |      Solver      |
+//      +------------------+
+
+        function solve () {
+            // Construct solve grid structure
+            let gridArray = []
+            for (let i = 0; i < cells.length; i++) {
+                let cellStructure = {};
+                /*
+                {
+                    cell : cells[i],
+                    value : cells[i].getAttribute(CELL_ATTR.VALUE),
+                    possible : [],
+                    x : parseInt(cells[i].getAttribute(CELL_ATTR.POS_X)),
+                    y : parseInt(cells[i].getAttribute(CELL_ATTR.POS_Y)),
+                    groupIndex : parseInt(cells[i].getAttribute(CELL_ATTR.GROUP_INDEX)),
+                    type : cells[i].getAttribute(CELL_ATTR.TYPE)
+                };
+                */
+                cellStructure.cell = cells[i];
+                cellStructure.value = cells[i].getAttribute(CELL_ATTR.VALUE);
+                console.log(cellStructure.value);
+                cellStructure.possible = [];
+                cellStructure.x = parseInt(cells[i].getAttribute(CELL_ATTR.POS_X));
+                cellStructure.y = parseInt(cells[i].getAttribute(CELL_ATTR.POS_Y));
+                cellStructure.groupIndex = parseInt(cells[i].getAttribute(CELL_ATTR.GROUP_INDEX));
+                cellStructure.type = cells[i].getAttribute(CELL_ATTR.TYPE);
+                gridArray.push(cellStructure);
+            }
+
+            console.log("solving grid: " + gridArray)
+
+            // Fill possible numbers
+            for (let i = 0; i < gridArray.length; i++) {
+                let checkCell = gridArray[i];
+                if (checkCell.type == CELL_TYPE.CLUE || checkCell.value != 0) continue;
+                checkCell.possible = solveGetAllowedValues(gridArray, i);
+                console.log("Possible values for cell [" + checkCell.x + "x" + checkCell.y + "] is " + checkCell.possible);
+            }
+
+            // Recursive solve
+            let allCellsSolved = false;
+            while (!allCellsSolved) {
+                console.log("Grid not filled yet...");
+
+                let gotStuck = true;
+                for (let i = 0; i < gridArray.length; i++) {
+                    if (!gotStuck) continue;
+
+                    let checkCell = gridArray[i];
+
+                    if (checkCell.value == 0 && checkCell.possible.length == 1) {
+                        console.log("Setting cell [" + checkCell.x + "x" + checkCell.y + "] value to " + checkCell.possible[0] + "...");
+                        checkCell.value = checkCell.possible[0];
+                        checkCell.possible = [];
+                        solveUpdateAllowedValues(gridArray, i);
+                        console.log("Found cell with only possible length of 1...");
+                        gotStuck = false;
+                    }
+
+                    if (gotStuck) {
+                        for (let checkValueIndex = 0; checkValueIndex < checkCell.possible.length; checkValueIndex++) {
+                            if (gotStuck) continue;
+                            let checkValue = checkCell.possible[checkValueIndex];
+                            if (solveOnlyPossible(gridArray, i, checkValue)) {
+                                checkCell.value = checkValue;
+                                checkCell.possible = [];
+                                solveUpdateAllowedValues(gridArray, i);
+                                gotStuck = false;
+                                console.log("Found cell with only 1 possible value...");
+                            }
+                        }
+                    }
+                }
+                if (gotStuck) {
+                    alert("Got stuck in recursive loop for solver...");
+                    break;
+                }
+
+                allCellsSolved = allCellsFilled(gridArray);
+                console.log("Solved status = " + allCellsSolved);
+            }
+
+            // Fill solved grid
+            console.log("Solving grid, changing " + gridArray.length + " values..");
+            for (let i = 0; i < gridArray.length; i++) {
+                if (gridArray[i].type == CELL_TYPE.CLUE) continue;
+                console.log("Setting cell [" + gridArray[i].x + "x" + gridArray[i].y + "] to " + gridArray[i].value + "...");
+                setCellValue(gridArray[i].cell, gridArray[i].value, false, false, false, CELL_TYPE.NORMAL);
+            }
+
+            alert("Solved grid successfully!");
+        }
+
+        function allCellsFilled (grid) {
+            for (let x = 0; x < grid.length; x++) {
+                if (grid[x].type == CELL_TYPE.CLUE) continue;
+                if (grid[x].possible.length > 0) return false;
+            }
+            return true;
+        }
+
+        function solveGetAllowedValues (grid, index) {
+            let cellData = grid[index];
+            let allowedValues = [1,2,3,4,5,6,7,8,9];
+
+            // Check Vertical
+            for (let y = 0; y < 9; y++) {
+                let checkCell = grid[y * 9 + cellData.x];
+                if (checkCell.value == 0) continue;
+                if (allowedValues.indexOf(Number(checkCell.value)) >= 0) {
+                    allowedValues.splice(allowedValues.indexOf(Number(checkCell.value)), 1);
+                }
+            }
+
+            // Check Horizontal
+            for (let x = 0; x < 9; x++) {
+                let checkCell = grid[cellData.y * 9 + x];
+                if (checkCell.value == 0) continue;
+                if (allowedValues.indexOf(Number(checkCell.value)) >= 0) {
+                    allowedValues.splice(allowedValues.indexOf(Number(checkCell.value)), 1);
+                }
+            }
+
+            // Check Group
+            let groupX = Math.floor(cellData.x/3) * 3;
+            let groupY = Math.floor(cellData.y/3) * 3;
+
+            for (let x = 0; x < 3; x++) {
+                for (let y = 0; y < 3; y++) {
+                    let checkCell = grid[(groupY + y) * 9 + groupX + x];
+                    if (checkCell.value == 0) continue;
+                    if (allowedValues.indexOf(Number(checkCell.value)) >= 0) {
+                        allowedValues.splice(allowedValues.indexOf(Number(checkCell.value)), 1);
+                    }
+                }
+            }
+
+            return allowedValues;
+        }
+
+        function solveOnlyPossible (grid, index, value) {
+            let cellData = grid[index];
+
+            let onlyPossible = true;
+
+            // Check rows
+            for (let x = 0; x < 9; x++) {
+                let checkCell = grid[cellData.y * 9 + x];
+                if (checkCell.type == CELL_TYPE.CLUE || checkCell == cellData || checkCell.value != 0) continue;
+                if (checkCell.possible.indexOf(value) >= 0) onlyPossible = false;
+            }
+
+            if (onlyPossible) return true;
+            onlyPossible = true;
+
+            // Check columns
+            for (let y = 0; y < 9; y++) {
+                let checkCell = grid[y * 9 + cellData.x];
+                if (checkCell.type == CELL_TYPE.CLUE || checkCell == cellData || checkCell.value != 0) continue;
+                if (checkCell.possible.indexOf(value) >= 0) onlyPossible = false;
+            }
+
+            if (onlyPossible) return true;
+            onlyPossible = true;
+
+            // Check group
+            let groupX = Math.floor(cellData.x/3) * 3;
+            let groupY = Math.floor(cellData.y/3) * 3;
+
+            for (let x = 0; x < 3; x++) {
+                for (let y = 0; y < 3; y++) {
+                    let checkCell = grid[(groupY + y) * 9 + groupX + x];
+                    if (checkCell.type == CELL_TYPE.CLUE || checkCell == cellData || checkCell.value != 0) continue;
+                    if (checkCell.possible.indexOf(value) >= 0) onlyPossible = false;
+                }
+            }
+
+            return onlyPossible;
+        }
+
+        function solveUpdateAllowedValues (grid, index) {
+            let cellData = grid[index];
+
+            // Check Vertical
+            for(let y = 0; y < 9; y++) {
+                let checkCell = grid[y * 9 + cellData.x];
+                if (checkCell.value != 0) continue;
+                if (checkCell.possible.indexOf(cellData.value) >= 0) {
+                    checkCell.possible.splice(checkCell.possible.indexOf(cellData.value), 1);
+                }
+            }
+
+            // Check Horizontal
+            for(let x = 0; x < 9; x++) {
+                let checkCell = grid[cellData.y * 9 + x];
+                if (checkCell.value != 0) continue;
+                if (checkCell.possible.indexOf(cellData.value) >= 0) {
+                    checkCell.possible.splice(checkCell.possible.indexOf(cellData.value), 1);
+                }
+            }
+
+            // Check Group
+            let groupX = Math.floor(cellData.x/3) * 3;
+            let groupY = Math.floor(cellData.y/3) * 3;
+
+            for(let x = 0; x < 3; x++) {
+                for(let y = 0; y < 3; y++) {
+                    let checkCell = grid[(groupY + y) * 9 + groupX + x];
+                    if (checkCell.value != 0) continue;
+                    if (checkCell.possible.indexOf(cellData.value) >= 0) {
+                        checkCell.possible.splice(checkCell.possible.indexOf(cellData.value), 1);
+                    }
+                }
+            }
+        }
+
+    </script>
+
+    <script>
+        initSudokuInside(document.getElementById("sudoku-root"));
+    </script>
+</body>
+</html>
