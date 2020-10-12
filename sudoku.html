@@ -17,8 +17,9 @@
     <title>Sudoku</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,600;0,700;0,800;1,300;1,400;1,600;1,700;1,800&display=swap" rel="stylesheet">
-
-    <script src="js/sudoku.js"></script>
+    
+    
+    
 
     <style>
         :root {
@@ -540,25 +541,25 @@
             let buttonContainerInput = document.createElement("div");
             buttonContainerInput.setAttribute("id", "sudoku-root-container-buttons-input");
 
-            let buttonInputUndo = createButtonInput("Undo", "svg/undo.svg", (button, e) => {
+            let buttonInputUndo = createButtonInput("Undo", "./svg/undo.svg", (button, e) => {
                 logUndoAction();
             });
 
-            let buttonInputRedo = createButtonInput("Redo", "svg/redo.svg", (button, e) => {
+            let buttonInputRedo = createButtonInput("Redo", "./svg/redo.svg", (button, e) => {
                 logRedoAction();
             });
 
-            let buttonInputDelete = createButtonInput("Delete", "svg/eraser.svg", (button, e) => {
+            let buttonInputDelete = createButtonInput("Delete", "./svg/eraser.svg", (button, e) => {
                 deleteDigit();
             });
 
-            let buttonInputPencil = createButtonInput("Pencil", "svg/pen-off.svg", (button, e) => {
-                if (pencilActive) document.querySelector('[src="svg/pen-on.svg"]').setAttribute("src", "svg/pen-off.svg");
-                else document.querySelector('[src="svg/pen-off.svg"]').setAttribute("src", "svg/pen-on.svg");
+            let buttonInputPencil = createButtonInput("Pencil", "./svg/pen-off.svg", (button, e) => {
+                if (pencilActive) document.querySelector('[src="./svg/pen-on.svg"]').setAttribute("src", "./svg/pen-off.svg");
+                else document.querySelector('[src="./svg/pen-off.svg"]').setAttribute("src", "./svg/pen-on.svg");
                 pencilModeToggle();
             });
 
-            let buttonInputHint = createButtonInput("Hint", "svg/hint.svg", (button, e) => {
+            let buttonInputHint = createButtonInput("Hint", "./svg/hint.svg", (button, e) => {
                 
             });
 
