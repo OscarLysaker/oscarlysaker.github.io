@@ -266,7 +266,7 @@
                             });
                         } else {
                             cell.addEventListener("touchmove", (e) => {
-                                testBox.innerText = "TOUCH MOVE";
+                                testBox.innerText = "TOUCH MOVE OVER [" + cell.getAttribute(CELL_ATTR.POS_X) + ", " + cell.getAttribute(CELL_ATTR.POS_Y) + "]";
                                 e.preventDefault();
                                 onCellOver(cell);
                             });
