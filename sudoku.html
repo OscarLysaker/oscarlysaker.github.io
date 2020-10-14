@@ -347,6 +347,10 @@
                 });
 
             } else {
+                document.addEventListener("touchmove", (e) => {
+                    testBox.innerText = "TOUCHING [" + e.target + "]";
+                });
+
                 document.addEventListener("touchend", () => {
                     onMouseReleased();
                     testBox.innerText = "TOUCH END";
