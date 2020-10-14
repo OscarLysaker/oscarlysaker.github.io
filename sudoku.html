@@ -265,11 +265,13 @@
                                 }
                             });
                         } else {
+                            /*
                             cell.addEventListener("touchmove", (e) => {
                                 testBox.innerText = "TOUCH MOVE OVER [" + cell.getAttribute(CELL_ATTR.POS_X) + ", " + cell.getAttribute(CELL_ATTR.POS_Y) + "]";
                                 e.preventDefault();
                                 onCellOver(cell);
                             });
+                            */
                         }
                     })(tableHeader, onCellOver);
 
@@ -345,7 +347,20 @@
                 document.addEventListener("mouseup", () => {
                     onMouseReleased();
                 });
+
             } else {
+
+                document.addEventListener("touchmove", (e) => {
+                    let checkElements = document.elementsFromPoint(e.touches[i].clientX, e.touches[i].clientY);
+                    for (let i = 0; i < checkElements.length; i++) {
+                        let checkElement = checkElements[i];
+                        if (checkElement.getAttribute("id") == "sudoku-root-cell") {
+                            testBox.innerText = "TOUCH MOVE OVER [" + checkElement.getAttribute(CELL_ATTR.POS_X) + ", " + checkElement.getAttribute(CELL_ATTR.POS_Y) + "]";
+                            onCellOver(checkElement)
+                            break;
+                        }
+                    }
+                });
                 document.addEventListener("touchend", () => {
                     onMouseReleased();
                     testBox.innerText = "TOUCH END";
