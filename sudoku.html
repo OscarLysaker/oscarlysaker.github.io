@@ -351,6 +351,7 @@
             } else {
 
                 document.addEventListener("touchmove", (e) => {
+                    testBox.innerText = "TOUCH MOVE AT [" + e.touches[i].clientX + ", " + e.touches[i].clientY + "]";
                     let checkElements = document.elementsFromPoint(e.touches[i].clientX, e.touches[i].clientY);
                     for (let i = 0; i < checkElements.length; i++) {
                         let checkElement = checkElements[i];
