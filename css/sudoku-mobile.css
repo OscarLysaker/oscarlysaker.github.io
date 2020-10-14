@@ -283,7 +283,7 @@ h3 {
     border-radius: 20%;
 }
 
-#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input .sudoku-button-input:hover {
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input .sudoku-button-input:active {
     background-color: #bad4dbab;
     cursor:pointer;
 }
