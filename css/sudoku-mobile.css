@@ -283,11 +283,6 @@ h3 {
     border-radius: 20%;
 }
 
-#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input .sudoku-button-input:active {
-    background-color: #bad4dbab;
-    cursor:pointer;
-}
-
 #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input .sudoku-button-input img {
     width: 7vmin;
     height: 7vmin;
