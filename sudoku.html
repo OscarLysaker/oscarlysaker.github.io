@@ -349,6 +349,9 @@
             } else {
                 document.addEventListener("touchmove", (e) => {
                     testBox.innerText = "TOUCHING [" + e.target + "]";
+                    if (e.target.hasAttribute("id") && e.target.getAttribute("id") == "sudoku-root-cell") {
+                        onCellOver(e.target);
+                    }
                 });
 
                 document.addEventListener("touchend", () => {
