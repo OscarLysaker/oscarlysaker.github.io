@@ -191,7 +191,7 @@
 
             // Style
             if (detectMob()) document.head.querySelector('[href="css/sudoku-fixed.css"]').setAttribute("href", "./css/sudoku-mobile.css");
-            //document.head.querySelector('[href="css/sudoku-fixed.css"]').setAttribute("href", "./css/sudoku-mobile.css");
+            document.head.querySelector('[href="css/sudoku-fixed.css"]').setAttribute("href", "./css/sudoku-mobile.css");
 
             // Container
             container = document.createElement("div");
@@ -253,7 +253,7 @@
 
                         cell.addEventListener("touchmove", (e) => {
                             if (dragFirstCell != null || (multiSelect.length > 0 && multiSelect.indexOf(cell) < 0)) {
-                                e.preventDefault();
+                                //e.preventDefault();
                                 onCellOver(cell);
                             }
                         });

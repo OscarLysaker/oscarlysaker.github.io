@@ -266,7 +266,9 @@ h3 {
     margin-top: calc(var(--grid-size-default)*0.03);
 }
 
-#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input .sudoku-button-input {
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input .sudoku-button-input,
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input .sudoku-button-input:active,
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input .sudoku-button-input:focus {
     width: calc(100% / 6);
     height: calc(var(--grid-size-default)*0.1);
     font-size: calc(var(--grid-size-default)*0.03);
