@@ -18,9 +18,13 @@
     <link rel="stylesheet" href="css/sudoku-fixed.css">
 </head>
 <body>
+    <div>Test message: <div id="test-box"></div></div>
+
     <div id="sudoku-root"></div>
 
     <script>
+
+        let testBox = document.getElementById("test-box");
 
 //      +--------------------------+
 //      |      Preset Puzzles      |
@@ -241,6 +245,7 @@
                         cell.addEventListener("touchstart", (e) => {
                             e.preventDefault();
                             onCellPushed(cell);
+                            testBox.innerText = "TOUCH START";
                         });
                     })(tableHeader, onCellPushed);
 
@@ -252,6 +257,7 @@
                         });
 
                         cell.addEventListener("touchmove", (e) => {
+                            testBox.innerText = "TOUCH MOVE";
                             if (dragFirstCell != null || (multiSelect.length > 0 && multiSelect.indexOf(cell) < 0)) {
                                 //e.preventDefault();
                                 onCellOver(cell);
@@ -342,10 +348,12 @@
 
             document.addEventListener("touchend", () => {
                 onMouseReleased();
+                testBox.innerText = "TOUCH END";
             });
 
             document.addEventListener("touchcancel", () => {
                 onMouseReleased();
+                testBox.innerText = "TOUCH CANCEL";
             });
         }
 
