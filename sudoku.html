@@ -238,7 +238,8 @@
                             onCellPushed(cell);
                         });
 
-                        cell.addEventListener("touchstart", () => {
+                        cell.addEventListener("touchstart", (e) => {
+                            e.preventDefault();
                             onCellPushed(cell);
                         });
                     })(tableHeader, onCellPushed);
@@ -250,8 +251,9 @@
                             }
                         });
 
-                        cell.addEventListener("touchmove", (ev) => {
+                        cell.addEventListener("touchmove", (e) => {
                             if (dragFirstCell != null || (multiSelect.length > 0 && multiSelect.indexOf(cell) < 0)) {
+                                e.preventDefault();
                                 onCellOver(cell);
                             }
                         });
