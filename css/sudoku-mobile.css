@@ -285,7 +285,7 @@ h3 {
 
 #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input .sudoku-button-input:hover {
     animation-name: active-animation;
-    animation-duration: 0.3s;
+    animation-duration: 0.1s;
     cursor:pointer;
 }
 
@@ -325,6 +325,7 @@ h3 {
 #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input [data-sudoku-button-type-pencil][data-sudoku-button-state="active"],
 #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input [data-sudoku-button-type-pencil][data-sudoku-button-state="active"]:hover {
     background-color: #bad4dbab;
+    animation-name: none;
 }
 
 #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input button[data-sudoku-button-state="disabled"],
