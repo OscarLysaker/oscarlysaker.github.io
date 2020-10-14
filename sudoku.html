@@ -347,11 +347,15 @@
                 });
 
             } else {
-                document.addEventListener("touchmove", (e) => {
+                table.addEventListener("touchmove", (e) => {
                     e.preventDefault();
-                    testBox.innerText = "TOUCHING [" + e.target + "]";
-                    if (e.target.hasAttribute("id") && e.target.getAttribute("id") == "sudoku-root-cell") {
-                        onCellOver(e.target);
+                    let elements = document.elementsFromPoint(e.touches.item(0).clientX, e.touches.item(0).clientY);
+                    for (i in elements) {
+                        if (elements[i].hasAttribute("id") && elements[i].getAttribute("id") == "sudoku-root-cell") {
+                            testBox.innerText = "TOUCHING [" + elements[i] + "]";
+                            onCellOver(elements[i]);
+                            return;
+                        }
                     }
                 });
 
