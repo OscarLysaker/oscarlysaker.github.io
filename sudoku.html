@@ -267,10 +267,8 @@
                         } else {
                             cell.addEventListener("touchmove", (e) => {
                                 testBox.innerText = "TOUCH MOVE";
-                                if (dragFirstCell != null || (multiSelect.length > 0 && multiSelect.indexOf(cell) < 0)) {
-                                    //e.preventDefault();
-                                    onCellOver(cell);
-                                }
+                                e.preventDefault();
+                                onCellOver(cell);
                             });
                         }
                     })(tableHeader, onCellOver);
