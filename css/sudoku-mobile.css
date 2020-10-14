@@ -283,16 +283,20 @@ h3 {
     border-radius: 20%;
 }
 
-#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input .sudoku-button-input:active {
-    animation: active-animation 0.3s both ease-out;
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input .sudoku-button-input:hover {
+    animation-name: active-animation;
+    animation-duration: 0.3s;
     cursor:pointer;
 }
 
 @keyframes active-animation {
-    from {
+    0% {
+        background-color: initial;
+    }
+    50% {
         background-color: #bad4dbab;
     }
-    to {
+    100% {
         background-color: initial;
     }
 }
