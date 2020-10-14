@@ -1,0 +1,364 @@
+:root {
+    --color-cell-default: white;
+    --color-cell-hover: gray;
+    --color-cell-highlight: rgb(189, 189, 189);
+    --color-cell-selected: rgb(157, 188, 212);
+    --color-cell-selected-highlight: rgb(218, 228, 236);
+    --color-cell-digit-highlight: rgb(157, 188, 212);
+    --color-cell-error-highlight: rgb(241, 221, 221);
+    --color-cell-error-highlight-selected: rgb(223, 188, 188);
+    --color-cell-error-digit-highlight: rgb(226, 170, 170);
+    --color-cell-error-digit-highlight-selected: rgb(207, 138, 138);
+
+    --color-digit-default: black;
+    --color-digit-input: rgb(53, 92, 122);
+    --color-digit-error: rgb(163, 50, 50);
+    --color-digit-error-clue: rgb(114, 51, 51);
+
+    --font-open-sans: 'Open Sans', sans-serif;
+
+    --font-weight-digit-clue: 500;
+    --font-weight-digit-input: 300;
+    --font-weight-digit-highlight: 600;
+    --font-weight-digit-error: 600;
+
+    --grid-size-default: 600px;
+    --grid-size-portrait: 98vmin;
+    --grid-size-landscape: 80vmin;
+
+    --cell-size-default: calc(var(--grid-size-default)/9);
+    --cell-size-portrait: calc(98vmin/9);
+    --cell-size-landscape: calc(80vmin/9);
+
+    --digit-size-grid-default: calc(var(--grid-size-default)*0.06);
+
+    --digit-size-pencil-default: calc(var(--grid-size-default)*0.02);
+
+    --color-white: white;
+    --color-black: black;
+    --color-blue-1: rgb(236, 241, 245);
+    --color-blue-2: rgb(218, 228, 236);
+    --color-blue-3: rgb(173, 199, 219);
+    --color-blue-4: rgb(146, 177, 200);
+    --color-blue-5: rgb(53, 92, 122);
+    --color-red-1: rgb(241, 221, 221);
+    --color-red-2: rgb(223, 188, 188);
+    --color-red-3: rgb(212, 149, 149);
+    --color-red-4: rgb(194, 126, 126);
+    --color-red-5: rgb(163, 50, 50);
+
+    --new-color-cell-default: white;
+    --new-color-cell-highlight: var(--color-blue-1);
+    --new-color-cell-highlight-selected-multi: var(--color-blue-2);
+    --new-color-digit-highlight: var(--color-blue-3);
+    --new-color-digit-highlight-selected-single: var(--color-blue-4);
+    --new-color-error-cell-highlight: var(--color-red-1);
+    --new-color-error-cell-highlight-selected-multi: var(--color-red-2);
+    --new-color-error-digit-highlight: var(--color-red-3);
+    --new-color-error-digit-highlight-selected-single: var(--color-red-4);
+    --new-color-digit-clue: var(--color-black);
+    --new-color-digit-input: var(--color-blue-5);
+    --new-color-digit-error: var(--color-red-5);
+}
+
+html {
+    font-family: var(--font-open-sans);
+    font-weight: 400;
+}
+
+body {
+    margin: 0;
+}
+
+h3 {
+    width:min-content;
+    font-size: 2em;
+    margin-block-start: 0.8em;
+    margin-block-end: 0.5em;
+}
+
+.unselectable {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Table Basic Styling */
+#sudoku-root #sudoku-root-table {
+    border-collapse: collapse;
+    border: 2px solid black;
+    table-layout: fixed;
+}
+
+#sudoku-root #sudoku-root-table {
+    width: 500px;
+    height: 500px;
+}
+
+#sudoku-root #sudoku-root-container {
+    width:min-content;
+    margin: auto;
+}
+
+#sudoku-root #sudoku-root-row, #sudoku-root #sudoku-root-cell { 
+    border: 1px solid black;
+}
+
+#sudoku-root #sudoku-root-row { 
+    height: calc(100%/9);
+}
+
+#sudoku-root #sudoku-root-cell {
+    width: 100%;
+    font-size: 32px;
+    font-size: var(--digit-size-grid-default);
+    background-color: var(--color-cell-default);
+    font-family: var(--font-open-sans);
+    font-weight: var(--font-weight-digit-input);
+    color: var(--color-digit-default);
+}
+
+/* Base Cell Line Thickness*/
+#sudoku-root #sudoku-root-row th:nth-of-type(3)[id=sudoku-root-cell],
+#sudoku-root #sudoku-root-row th:nth-of-type(6)[id=sudoku-root-cell]
+{ border-right: 2px solid black; }
+
+#sudoku-root tr[id=sudoku-root-row]:nth-of-type(3) #sudoku-root-cell, 
+#sudoku-root tr[id=sudoku-root-row]:nth-of-type(6) #sudoku-root-cell 
+{ border-bottom: 2px solid black; }
+
+/* Base Cell Interaction*/
+#sudoku-root #sudoku-root-cell:hover {
+    cursor:pointer;
+    background-color: var(--color-cell-hover);
+}
+
+/*
+/*      BASE CELL STATES
+*/
+
+/* Style for all cells */
+#sudoku-root #sudoku-root-row #sudoku-root-cell {
+    background-color: var(--color-cell-default);
+    font-weight: var(--font-weight-digit-input);
+    font-weight: 600;
+    color:  rgb(2, 58, 100);
+    color: var(--new-color-digit-input);
+}
+
+/* Cell indicator highlight for cells around selected cell with digit */
+#sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-cell-highlight] {
+    background-color: var(--color-cell-selected-highlight);
+}
+
+/* Clue cell styling */
+#sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-cell-type="clue"] {
+    font-weight: 600;
+    color: black;
+    color: var(--new-color-digit-clue);
+}
+
+/* Single-selected cell styling */
+#sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-cell-selected="single"] {
+    background-color: var(--color-cell-selected);
+    font-weight: var(--font-weight-digit-highlight);
+}
+
+/* Multi-selected cell styling */
+#sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-cell-selected="multi"] {
+    background-color: var(--color-cell-selected-highlight);
+}
+
+/* Error highlight same digit cells */
+#sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-digit-highlight] {
+    background-color: var(--color-cell-digit-highlight);
+    font-weight: var(--font-weight-digit-highlight);
+    background-color: green;
+    background-color: var(--new-color-digit-highlight);
+}
+
+/* Error highlight grid cells */
+#sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-cell-error="cell"],
+#sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-cell-error-highlight] {
+    
+    background-color: var(--color-cell-error-highlight);
+    background-color: orange;
+    background-color: var(--new-color-error-cell-highlight);
+    
+}
+
+/* Error highlight same digit cell */
+#sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-cell-error="digit"],
+#sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-digit-error] {
+    color: var(--color-digit-error);
+    font-weight: var(--font-weight-digit-error);
+    background-color: var(--color-cell-error-digit-highlight);
+    background-color: purple;
+    color: var(--new-color-digit-error);
+    background-color: var(--new-color-error-digit-highlight);
+}
+
+/* Error highlight same digit cell (type == clue) */
+#sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-cell-error="digit"][data-sudoku-cell-type="clue"],
+#sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-digit-error][data-sudoku-cell-type="clue"] {
+    color: var(--color-digit-error-clue);
+    font-weight: 700;
+    background-color: var(--color-cell-error-digit-highlight);
+    background-color: yellow;
+    background-color: var(--new-color-error-digit-highlight);
+}
+
+/* Error highlight grid cells (single-selected) */
+#sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-cell-selected="single"][data-sudoku-cell-error="cell"],
+#sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-cell-selected="single"][data-sudoku-cell-error-highlight] {
+    background-color: var(--color-cell-error-highlight-selected);
+    background-color: cyan;
+    background-color: var(--new-color-error-cell-highlight-selected-multi);
+}
+
+/* Error highlight grid cells (multi-selected) */
+#sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-cell-selected="multi"][data-sudoku-cell-error="cell"],
+#sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-cell-selected="multi"][data-sudoku-cell-error-highlight] {
+    background-color: var(--color-cell-error-highlight);
+    background-color: rgb(160, 104, 0);
+    background-color: var(--new-color-error-cell-highlight-selected-multi);
+}
+
+/* Error highlight same digit cells (single-selected) */
+#sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-cell-selected="single"][data-sudoku-cell-error="digit"],
+#sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-cell-selected="single"][data-sudoku-digit-error] {
+    background-color: var(--color-cell-error-digit-highlight-selected);
+    background-color: darkolivegreen;
+    background-color: var(--new-color-error-digit-highlight-selected-single);
+}
+
+#sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-cell-type="pencil"] {
+    font-size: var(--digit-size-pencil-default);
+    font-weight: 500;
+    letter-spacing: 2px;
+    color: black;
+    word-wrap: break-word;
+}
+
+#sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-cell-arrow-highlight] {
+    border: 2px solid red;
+}
+
+#sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-cell-type="pencil"] span[data-sudoku-cell-pencil-highlight] {
+    opacity: 0.7;
+}
+
+#sudoku-root #sudoku-root-row #sudoku-root-cell[data-sudoku-cell-type="pencil"] span[data-sudoku-cell-pencil-highlight-digit] {
+    font-weight: 700;
+}
+
+/*
+/*      INPUT BUTTONS
+*/
+
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input {
+    margin: auto;
+    width: 94%;
+    max-width: 100%;
+    margin-top: calc(var(--grid-size-default)*0.03);
+}
+
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input .sudoku-button-input {
+    width: calc(100% / 6);
+    height: calc(var(--grid-size-default)*0.1);
+    font-size: calc(var(--grid-size-default)*0.03);
+    font-weight: 600;
+    color: black;
+    border: none;
+    outline: none;
+    margin-right: calc(100% / 30);
+    background-color: white;
+    transition: background-color 0.3s ease-out;
+    border-radius: 20%;
+}
+
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input .sudoku-button-input:hover {
+    background-color: #bad4dbab;
+    cursor:pointer;
+}
+
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input .sudoku-button-input img {
+    width: 4vmin;
+    height: 4vmin;
+    margin: auto;
+    fill: red;
+}
+
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input .sudoku-button-input #sudoku-button-input-label {
+    width: 100%;
+    text-align: center;
+    position:relative;
+    top:-1.2vmin;
+}
+
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input .sudoku-button-input:last-child,
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input .sudoku-button-input:last-child:hover,
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input .sudoku-button-input:last-child:active,
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input .sudoku-button-input:last-child:focus {
+    margin-right:0vmin;
+}
+
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input [data-sudoku-button-type-pencil][data-sudoku-button-state="active"],
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input [data-sudoku-button-type-pencil][data-sudoku-button-state="active"]:hover {
+    background-color: #bad4dbab;
+}
+
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input button[data-sudoku-button-state="disabled"],
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input button[data-sudoku-button-state="disabled"] img,
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input button[data-sudoku-button-state="disabled"] #sudoku-button-input-label,
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input button[data-sudoku-button-state="disabled"]:hover {
+    opacity: 0.6;
+    cursor: default;
+    background-color: white;
+}
+
+/*
+/*      NUMBER BUTTONS
+*/
+
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input-numbers {
+    width:94%;
+    max-width: 100%;
+    margin:auto;
+    margin-top: calc(var(--grid-size-default)*0.02);
+}
+
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input-numbers .sudoku-button-number-input,
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input-numbers .sudoku-button-number-input:hover,
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input-numbers .sudoku-button-number-input:active,
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input-numbers .sudoku-button-number-input:focus {
+    width: calc(100% / 10);
+    height: calc(var(--grid-size-default)*0.1);
+    font-size: calc(var(--grid-size-default)*0.08);
+    font-weight: 500;
+    color: rgb(19, 81, 110);
+    border: none;
+    outline: none;
+    border-radius: 20%;
+    margin-right:calc(100%/100);
+    transition: background-color 0.3s ease-out, text-shadow 0.5s ease, color 0.3s ease;
+    background-color: white;
+    text-shadow: 0 0 0vmin #fff, 0 0 0vmin #fff, 0 0 0vmin #fff, 0 0 0vmin #fff;
+}
+
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input-numbers .sudoku-button-number-input:last-child,
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input-numbers .sudoku-button-number-input:last-child:hover,
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input-numbers .sudoku-button-number-input:last-child:active,
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input-numbers .sudoku-button-number-input:last-child:focus {
+    margin-right:0vmin;
+}
+
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input-numbers .sudoku-button-number-input:hover {
+    background-color: #bad4dbab;
+    text-shadow: 0 0 0.4vmin #fff, 0 0 1vmin #fff, 0 0 1.8vmin #fff, 0 0 2.2vmin #fff;
+    color: rgb(56, 112, 138);
+    cursor: pointer;
+}
