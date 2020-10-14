@@ -348,6 +348,7 @@
 
             } else {
                 document.addEventListener("touchmove", (e) => {
+                    e.preventDefault();
                     testBox.innerText = "TOUCHING [" + e.target + "]";
                     if (e.target.hasAttribute("id") && e.target.getAttribute("id") == "sudoku-root-cell") {
                         onCellOver(e.target);
