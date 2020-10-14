@@ -252,7 +252,7 @@
                             cell.addEventListener("touchstart", (e) => {
                                 e.preventDefault();
                                 onCellPushed(cell);
-                                testBox.innerText = "TOUCH START " + cell.getAttribute(CELL_ATTR.POS_X) + ", " + cell.getAttribute(CELL_ATTR.POS_Y) + "]";;
+                                testBox.innerText = "TOUCH START [" + cell.getAttribute(CELL_ATTR.POS_X) + ", " + cell.getAttribute(CELL_ATTR.POS_Y) + "]";;
                             });
                         }
                     })(tableHeader, onCellPushed);
