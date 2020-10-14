@@ -168,6 +168,10 @@
             console.log("Pressed new button...");
         });
 
+        // TOUCH
+
+        let isTouch = false;
+
 //      +---------------------------------+
 //      |      Sudoku Initialization      |
 //      +---------------------------------+
@@ -192,6 +196,8 @@
             if (element == null) return;
 
             root = element;
+
+            isTouch = detectMob();
 
             // Style
             if (detectMob()) document.head.querySelector('[href="css/sudoku-fixed.css"]').setAttribute("href", "./css/sudoku-mobile.css");
@@ -238,31 +244,35 @@
                     tableHeader.setAttribute(CELL_ATTR.TYPE, CELL_TYPE.EMPTY);
 
                     (function(cell, onCellPushed){
-                        cell.addEventListener("mousedown", () => {
-                            onCellPushed(cell);
-                        });
-
-                        cell.addEventListener("touchstart", (e) => {
-                            e.preventDefault();
-                            onCellPushed(cell);
-                            testBox.innerText = "TOUCH START";
-                        });
+                        if (!isTouch) {
+                            cell.addEventListener("mousedown", () => {
+                                onCellPushed(cell);
+                            });
+                        } else {
+                            cell.addEventListener("touchstart", (e) => {
+                                e.preventDefault();
+                                onCellPushed(cell);
+                                testBox.innerText = "TOUCH START";
+                            });
+                        }
                     })(tableHeader, onCellPushed);
 
                     (function(cell, onCellOver){
-                        cell.addEventListener("mouseover", (ev) => {
-                            if (ev.buttons == 1 || ev.button == 1) {
-                                onCellOver(cell);
-                            }
-                        });
-
-                        cell.addEventListener("touchmove", (e) => {
-                            testBox.innerText = "TOUCH MOVE";
-                            if (dragFirstCell != null || (multiSelect.length > 0 && multiSelect.indexOf(cell) < 0)) {
-                                //e.preventDefault();
-                                onCellOver(cell);
-                            }
-                        });
+                        if (!isTouch) {
+                            cell.addEventListener("mouseover", (ev) => {
+                                if (ev.buttons == 1 || ev.button == 1) {
+                                    onCellOver(cell);
+                                }
+                            });
+                        } else {
+                            cell.addEventListener("touchmove", (e) => {
+                                testBox.innerText = "TOUCH MOVE";
+                                if (dragFirstCell != null || (multiSelect.length > 0 && multiSelect.indexOf(cell) < 0)) {
+                                    //e.preventDefault();
+                                    onCellOver(cell);
+                                }
+                            });
+                        }
                     })(tableHeader, onCellOver);
 
                     (function(cell, onCellOut){
@@ -330,9 +340,24 @@
 
             container.append(buttonContainerInputNumbers);
 
-            document.addEventListener("mouseup", () => {
-                onMouseReleased();
-            });
+            if (!isTouch) {
+                document.addEventListener("mousedown", () => {
+                    onMousePressed();
+                });
+                document.addEventListener("mouseup", () => {
+                    onMouseReleased();
+                });
+            } else {
+                document.addEventListener("touchend", () => {
+                    onMouseReleased();
+                    testBox.innerText = "TOUCH END";
+                });
+
+                document.addEventListener("touchcancel", () => {
+                    onMouseReleased();
+                    testBox.innerText = "TOUCH CANCEL";
+                });
+            }
 
             container.addEventListener("mouseout", () => {
                 mouseOverRoot = false;
@@ -340,20 +365,6 @@
 
             container.addEventListener("mouseover", () => {
                 mouseOverRoot = true;
-            });
-
-            document.addEventListener("mousedown", () => {
-                onMousePressed();
-            });
-
-            document.addEventListener("touchend", () => {
-                onMouseReleased();
-                testBox.innerText = "TOUCH END";
-            });
-
-            document.addEventListener("touchcancel", () => {
-                onMouseReleased();
-                testBox.innerText = "TOUCH CANCEL";
             });
         }
 
