@@ -16,12 +16,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,600;0,700;0,800;1,300;1,400;1,600;1,700;1,800&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="css/sudoku-fixed.css">
+
+    <script type="text/javascript" src="./data/data.js"></script>
 </head>
 <body>
 
     <div id="sudoku-root"></div>
 
     <script>
+
+        let testData = JSON.parse(data);
+        console.log(testData.uniques[0]);
 
 //      +--------------------------+
 //      |      Preset Puzzles      |
@@ -157,6 +162,11 @@
             fillRandom();
         });
 
+        let buttonFillUnique = createButton("Fill Unique", "sudoku-button-fill-unique", null, () => {
+            console.log("Pressed fill unique button...");
+            fillUnique();
+        });
+
         let buttonSolve = createButton("Solve", "sudoku-button-redo", null, () => {
             solve();
         });
@@ -219,6 +229,7 @@
             buttonContainerGrid.append(buttonSample);
             buttonContainerGrid.append(buttonReset);
             buttonContainerGrid.append(buttonFillRandom);
+            buttonContainerGrid.append(buttonFillUnique);
             buttonContainerGrid.append(buttonSolve);
             buttonContainerGrid.append(buttonTest);
 
@@ -771,7 +782,7 @@
                 // Apply values
                 cell.innerText = tempNewInnerText;
                 cell.setAttribute(CELL_ATTR.VALUE, tempNewValue);
-                console.log("Setting cell to [" + tempNewType + "] inside manipulation func...");
+                //console.log("Setting cell to [" + tempNewType + "] inside manipulation func...");
                 cell.setAttribute(CELL_ATTR.TYPE, tempNewType);
 
                 // If applied number, check if pencils should be removed
@@ -1053,7 +1064,7 @@
 //      +--------------------------+
 
         function updateErrorHighlights () {
-            console.log("UPDATING ERRROOORRRRRR");
+            //console.log("UPDATING ERRROOORRRRRR");
 
             document.querySelectorAll('[' + CELL_ATTR.ERROR + ']').forEach((value, key, parent) => { 
                 value.removeAttribute(CELL_ATTR.ERROR);
@@ -1126,7 +1137,7 @@
                 }
             }
 
-            console.log("NUMBER OF CONFLICTING CELLS: " + cellsConflicting.length);
+            //console.log("NUMBER OF CONFLICTING CELLS: " + cellsConflicting.length);
         }
 
         function checkIfFilled () {
@@ -1459,6 +1470,202 @@
                     }
                 }
             }
+        }
+
+//      +---------------------+
+//      |      Generator      |
+//      +---------------------+
+
+        function fillUnique () {
+
+            // Create temp grid
+            let tempGrid = [];
+            for (let i = 0; i < 81; i++) tempGrid.push(0);
+
+            // Error variables for tracking failures...
+            let numFailedAttempts = 0;
+            let maxFailedAttempts = 5;
+            let numResetAttempts = 0;
+            let maxResetAttempts = 10;
+            let numCompleteResetAttempts = 0;
+            let maxCompleteResetAttempts = 10;
+
+            let failedValueCounter = 0;
+            let failedLineCounter = 0;
+            let failedCompleteCounter = 0;
+
+            // Loop to fill grid
+            while (tempGrid.indexOf(0) >= 0) {
+
+                // Find cell index with unset value
+                let cellIndex = -1;
+                for (let ci = 0; ci < 81; ci++) {
+                    if (tempGrid[ci] != 0) continue;
+                    cellIndex = ci;
+                    break;
+                }
+
+                // Check if found cellIndex
+                if (cellIndex == -1) {
+                    numFailedAttempts++;
+                    console.log("Added failed attempt due to not finding index...");
+                    continue;
+                }
+
+                // Check if any value is allowed, in random order
+                let allowedValue = 0;
+                let possibleValues = [1,2,3,4,5,6,7,8,9];
+                while (possibleValues.length > 0) {
+
+                    // Reset allowedValue
+                    allowedValue = 0;
+
+                    // Store individual check value from remaining list
+                    let checkValueIndex = possibleValues.length == 1 ? 0 : Math.round(Math.random()*(possibleValues.length-1));
+                    let checkValue = possibleValues.splice(checkValueIndex, 1)[0];
+
+                    console.log("Checking value: " + checkValue);
+
+                    // Check if value is permitted in all groupings (rows, columns, groups)
+                    let cellIndexX = cellIndex%9;
+                    let cellIndexY = Math.floor(cellIndex/9);
+                    let cellIndexGroup = Math.floor(cellIndexY/3) * 3 + Math.floor(cellIndexX / 3);
+                    let checkNearIndexes = [];
+
+                    // Row
+                    for (let colIndex = 0; colIndex < 9; colIndex++) {
+                        let checkIndex = (cellIndexY * 9) + colIndex;
+                        if (checkIndex != cellIndex && checkNearIndexes.indexOf(checkIndex) < 0) {
+                            checkNearIndexes.push(checkIndex);
+                        }
+                    }
+
+                    // Column
+                    for (let rowIndex = 0; rowIndex < 9; rowIndex++) {
+                        let checkIndex = (rowIndex * 9) + cellIndexX;
+                        if (checkIndex != cellIndex && checkNearIndexes.indexOf(checkIndex) < 0) {
+                            checkNearIndexes.push(checkIndex);
+                        }
+                    }
+
+                    // Group
+                    let groupIndexX = Math.floor(cellIndexX/3)*3;
+                    let groupIndexY = Math.floor(cellIndexY/3)*3;
+                    for (let gx = 0; gx < 3; gx++) { 
+                        for (let gy = 0; gy < 3; gy++) {
+                            let checkIndex = (groupIndexY + gy) * 9 + groupIndexX + gx;
+                            if (checkIndex != cellIndex && checkNearIndexes.indexOf(checkIndex) < 0) {
+                                checkNearIndexes.push(checkIndex);
+                            }
+                        }
+                    }
+
+                    console.log("Checking conflicts for " + checkNearIndexes.length + " cells...");
+
+                    // Check if any conflicts appear
+                    for (let ci = 0; ci < checkNearIndexes.length; ci++) {
+                        if (tempGrid[checkNearIndexes[ci]] == checkValue) {
+                            // Set allowedValue to -1 to indicate failure
+                            allowedValue = -1;
+                            break;
+                        }
+                    }
+
+                    // Check if value is allowed, if not; continue
+                    if (allowedValue == 0) {
+                        allowedValue = checkValue;
+                        break;
+                    } else if (allowedValue == -1) {
+                        continue;
+                    }
+                }
+
+                // If no allowed value were found, continue
+                if (allowedValue <= 0) {
+                    if (numFailedAttempts >= maxFailedAttempts) {
+                        if (numResetAttempts >= maxResetAttempts) {
+                            if (numCompleteResetAttempts >= maxCompleteResetAttempts) {
+                                console.log("Last complete reset failed...");
+                                break;
+                            } else {
+                                console.log("Added failed attempt due to not solving complete reset...");
+                                failedCompleteCounter++;
+                                numCompleteResetAttempts++;
+                                numResetAttempts = 0;
+                                numFailedAttempts = 0;
+                                for (let ri = 0; ri < 81; ri++) {
+                                    tempGrid[ri] = 0;
+                                }
+                                continue;
+                            }
+                        } else {
+                            failedLineCounter++;
+                            numResetAttempts++;
+                            numFailedAttempts = 0;
+                            let resetPoint = Math.floor((tempGrid.indexOf(0)-1) / 9) * 9;
+                            for (let ri = resetPoint; ri < 81; ri++) {
+                                tempGrid[ri] = 0;
+                            }
+                            continue;
+                        }
+                    } else {
+                        failedValueCounter++;
+                        numFailedAttempts++;
+                        console.log("Added failed attempt due to not finding allowed value...");
+                        continue;
+                    }
+                }
+
+                // Set value and continue..
+                if (allowedValue > 0) {
+                    tempGrid[cellIndex] = allowedValue;
+                    console.log("Reset failed counter, found allowed digit!");
+                    numFailedAttempts = 0;
+                    continue;
+                }
+            }
+
+            if (numCompleteResetAttempts >= maxCompleteResetAttempts) {
+                alert("Stopped generating grid, too many failed attempts...");
+            } else {
+                console.log("------------------------------");
+                console.log("FOUND WORKING SOLUTION!");
+                console.log("------------------------------");
+                console.log("Failed counter:");
+                console.log("Values: " + failedValueCounter);
+                console.log("Lines: " + failedLineCounter);
+                console.log("Resets: " + failedCompleteCounter);
+                console.log("------------------------------");
+                console.log("Unique grid as string:");
+                let gridString = tempGrid.toString();
+                while (gridString.includes(",")) gridString = gridString.replace(",", "");
+                console.log(gridString);
+                console.log("------------------------------");
+            }
+
+            // Apply to grid
+            reset();
+            for (let i = 0; i < cells.length; i++) {
+                setCellValue(cells[i], tempGrid[i], false, false);
+            }
+        }
+
+//      +----------------------------+
+//      |      Puzzle Generator      |
+//      +----------------------------+
+
+        function createPuzzle (numsToRemove=20, grid=[]) {
+
+            // Prepare grid
+            let tempGrid = grid;
+            if (tempGrid == []) {
+                let stringGrid = testData.uniques[0].split("");
+                for (let i = 0; i < stringGrid.length; i++) {
+                    tempGrid.push(parseInt(stringGrid[i]));
+                }
+            }
+
+
         }
 
     </script>
