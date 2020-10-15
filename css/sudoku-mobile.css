@@ -324,11 +324,14 @@ h3 {
 }
 
 #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input button,
-#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input button img,
-#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input button #sudoku-button-input-label,
 #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input button:hover,
 #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input button:active,
-#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input button:focus {
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input button:focus,
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input button img,
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input button img:hover,
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input button img:active,
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input button img:focus,
+#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input button #sudoku-button-input-label {
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     -khtml-user-select: none;
@@ -381,8 +384,6 @@ h3 {
 }
 
 #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input-numbers .sudoku-button-number-input,
-#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input-numbers .sudoku-button-number-input img,
-#sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input-numbers .sudoku-button-number-input #sudoku-button-input-label,
 #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input-numbers .sudoku-button-number-input:hover,
 #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input-numbers .sudoku-button-number-input:active,
 #sudoku-root #sudoku-root-container #sudoku-root-container-buttons-input-numbers .sudoku-button-number-input:focus {

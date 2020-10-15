@@ -157,11 +157,6 @@
             reset();
         });
 
-        let buttonFillRandom = createButton("Fill Random", "sudoku-button-fill-random", null, () => {
-            console.log("Pressed fill random button...");
-            fillRandom();
-        });
-
         let buttonFillUnique = createButton("Fill Unique", "sudoku-button-fill-unique", null, () => {
             console.log("Pressed fill unique button...");
             fillUnique();
@@ -228,7 +223,6 @@
             // Add buttons
             buttonContainerGrid.append(buttonSample);
             buttonContainerGrid.append(buttonReset);
-            buttonContainerGrid.append(buttonFillRandom);
             buttonContainerGrid.append(buttonFillUnique);
             buttonContainerGrid.append(buttonSolve);
             buttonContainerGrid.append(buttonTest);
@@ -667,13 +661,6 @@
             }
             logReset();
             console.log("Sudoku successfully reset!");
-        }
-
-        function fillRandom () {
-            reset();
-            for (let i = 0; i < cells.length; i++) {
-                setCellValue(cells[i], Math.round(Math.random() * 9), false, false);
-            }
         }
 
 //      +------------------------------+
