@@ -59,6 +59,8 @@
     --new-color-digit-clue: var(--color-black);
     --new-color-digit-input: var(--color-blue-5);
     --new-color-digit-error: var(--color-red-5);
+
+    --clock-font-size: 5vmin;
 }
 
 html {

@@ -15,7 +15,8 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,600;0,700;0,800;1,300;1,400;1,600;1,700;1,800&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="css/sudoku-fixed.css">
+    <link rel="stylesheet" href="./css/clock-style.css">
+    <link rel="stylesheet" href="./css/sudoku-fixed.css">
 
     <script type="text/javascript" src="./data/data.js"></script>
 </head>
@@ -23,10 +24,14 @@
 
     <div id="sudoku-root"></div>
 
+    <script type="text/javascript" src="./js/clock.js"></script>
+
     <script>
 
         let testData = JSON.parse(data);
         console.log(testData.uniques[0]);
+
+        let isDebugging = true;
 
 //      +--------------------------+
 //      |      Preset Puzzles      |
@@ -201,9 +206,11 @@
 
             isTouch = detectMob();
 
+            if (!isDebugging) document.oncontextmenu = function () {return false;}
+
             // Style
-            if (detectMob()) document.head.querySelector('[href="css/sudoku-fixed.css"]').setAttribute("href", "./css/sudoku-mobile.css");
-            //document.head.querySelector('[href="css/sudoku-fixed.css"]').setAttribute("href", "./css/sudoku-mobile.css");
+            if (detectMob()) document.head.querySelector('[href="./css/sudoku-fixed.css"]').setAttribute("href", "./css/sudoku-mobile.css");
+            //document.head.querySelector('[href="./css/sudoku-fixed.css"]').setAttribute("href", "./css/sudoku-mobile.css");
 
             // Container
             container = document.createElement("div");
@@ -216,8 +223,13 @@
             logo.innerText = "Sudoku";
             container.append(logo);
 
+            // Timer root
+            let clockRoot = document.createElement("span");
+            clockRoot.setAttribute("id", "sudoku-clock-root");
+            container.append(clockRoot);
+
             // Button container grid
-            let buttonContainerGrid = document.createElement("div");
+            let buttonContainerGrid = document.createElement("span");
             buttonContainerGrid.setAttribute("id", "sudoku-root-container-buttons-grid");
 
             // Add buttons
@@ -1659,6 +1671,7 @@
 
     <script>
         initSudokuInside(document.getElementById("sudoku-root"));
+        clockInit(document.getElementById("sudoku-clock-root"), true);
     </script>
 </body>
 </html>
