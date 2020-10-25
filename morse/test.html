@@ -1,0 +1,245 @@
+<!--
+
+    Sound tutorial used: https://marcgg.com/blog/2016/11/01/javascript-audio/
+    
+-->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Morse JS</title>
+</head>
+<body>
+    <button id="sound-stop-all">Stop All</button>
+
+    <h4>Example 1</h4>
+    <button id="sound-start-button-1">Start</button>
+    <button id="sound-stop-button-1">Stop</button>
+
+    <h4>Example 2</h4>
+    <button id="sound-start-button-2">Start</button>
+    <button id="sound-stop-button-2">Stop</button>
+
+    <h4>Example 3</h4>
+    <button id="sound-start-button-3">Start</button>
+    <button id="sound-stop-1-3">Stop (X=0.1)</button>
+    <button id="sound-stop-2-3">Stop (X=1)</button>
+    <button id="sound-stop-3-3">Stop (X=5)</button>
+
+    <h4>Example 4</h4>
+    <button id="sound-start-4-stop-fast">Start and stop quickly</button>
+    <button id="sound-start-4-stop-slow">Start and stop slowly</button>
+
+    <h4>Example 5</h4>
+    <button id="sound-note-sine-5">Sine</button>
+    <button id="sound-note-square-5">Square</button>
+    <button id="sound-note-triangle-5">Triangle</button>
+    <button id="sound-note-sawtooth-5">Sawtooth</button>
+
+    <script>
+
+        // EXAMPLE 1
+
+        let context1 = new AudioContext();
+        let o1 = null;
+
+        let sound1IsPlaying = false;
+
+        let startButton1 = document.getElementById("sound-start-button-1");
+        startButton1.onclick = (e) => {
+            e.preventDefault();
+
+            if (sound1IsPlaying) return;
+            sound1IsPlaying = true;
+
+            o1 = context1.createOscillator();
+            o1.type="sine";
+            o1.connect(context1.destination);
+            o1.start();
+        }
+
+        let stopButton1 = document.getElementById("sound-stop-button-1");
+        stopButton1.onclick = (e) => {
+            e.preventDefault();
+
+            if (!sound1IsPlaying) return;
+            sound1IsPlaying = false;
+
+            o1.stop();
+        }
+
+        // EXAMPLE 2
+
+        let context2 = new AudioContext();
+        let o2 = null;
+        let g2 = null;
+
+        let sound2IsPlaying = false;
+
+        let startButton2 = document.getElementById("sound-start-button-2");
+        startButton2.onclick = (e) => {
+            e.preventDefault();
+
+            if (sound2IsPlaying) return;
+            sound2IsPlaying = true;
+
+            o2 = context2.createOscillator();
+            g2 = context2.createGain();
+            o2.connect(g2);
+            g2.connect(context2.destination);
+            o2.start(0);
+        }
+
+        let stopButton2 = document.getElementById("sound-stop-button-2");
+        stopButton2.onclick = (e) => {
+            e.preventDefault();
+
+            if (!sound2IsPlaying) return;
+            sound2IsPlaying = false;
+
+            g2.gain.exponentialRampToValueAtTime(0.00001, context2.currentTime + 0.04);
+        }
+
+        // EXAMPLE 3
+
+        let context3 = new AudioContext();
+        let o3 = null;
+        let g3 = null;
+
+        let sound3IsPlaying = false;
+
+        let startButton3 = document.getElementById("sound-start-button-3");
+        startButton3.onclick = (e) => {
+            e.preventDefault();
+
+            if (sound3IsPlaying) return;
+            sound3IsPlaying = true;
+
+            o3 = context3.createOscillator();
+            g3 = context3.createGain();
+            o3.connect(g3);
+            g3.connect(context3.destination);
+            o3.start(0);
+        }
+
+        let stopButton31 = document.getElementById("sound-stop-1-3");
+        stopButton31.onclick = (e) => {
+            e.preventDefault();
+
+            if (!sound3IsPlaying) return;
+            sound3IsPlaying = false;
+
+            g3.gain.exponentialRampToValueAtTime(0.00001, context3.currentTime + 0.1);
+        }
+
+        let stopButton32 = document.getElementById("sound-stop-2-3");
+        stopButton32.onclick = (e) => {
+            e.preventDefault();
+
+            if (!sound3IsPlaying) return;
+            sound3IsPlaying = false;
+
+            g3.gain.exponentialRampToValueAtTime(0.00001, context3.currentTime + 1.0);
+        }
+
+        let stopButton33 = document.getElementById("sound-stop-3-3");
+        stopButton33.onclick = (e) => {
+            e.preventDefault();
+
+            if (!sound3IsPlaying) return;
+            sound3IsPlaying = false;
+
+            g3.gain.exponentialRampToValueAtTime(0.00001, context3.currentTime + 5.0);
+        }
+
+        // EXAMPLE 4
+
+        let context4 = new AudioContext();
+        let o4 = null;
+        let g4 = null;
+
+        let startStopFastButton4 = document.getElementById("sound-start-4-stop-fast");
+        startStopFastButton4.onclick = (e) => {
+            e.preventDefault();
+
+            o4 = context4.createOscillator();
+            g4 = context4.createGain();
+            o4.connect(g4);
+            g4.connect(context4.destination);
+            o4.start(0);
+            g4.gain.exponentialRampToValueAtTime(0.00001, context4.currentTime + 0.08);
+        }
+
+        let startStopSlowButton4 = document.getElementById("sound-start-4-stop-slow");
+        startStopSlowButton4.onclick = (e) => {
+            e.preventDefault();
+
+            o4 = context4.createOscillator();
+            g4 = context4.createGain();
+            o4.connect(g4);
+            g4.connect(context4.destination);
+            o4.start(0);
+            g4.gain.exponentialRampToValueAtTime(0.00001, context4.currentTime + 1.5);
+        }
+
+        // EXAMPLE 5
+
+        let context5 = new AudioContext();
+        let o5 = null;
+        let g5 = null;
+
+        let playNoteSine5 = document.getElementById("sound-note-sine-5");
+        playNoteSine5.onclick = (e) => {
+            e.preventDefault();
+
+            o5 = context5.createOscillator();
+            g5 = context5.createGain();
+            o5.connect(g5);
+            o5.type = "sine";
+            g5.connect(context5.destination);
+            o5.start(0);
+            g5.gain.exponentialRampToValueAtTime(0.00001, context5.currentTime + 1.5);
+        }
+
+        let playNoteSquare5 = document.getElementById("sound-note-square-5");
+        playNoteSquare5.onclick = (e) => {
+            e.preventDefault();
+
+            o5 = context5.createOscillator();
+            g5 = context5.createGain();
+            o5.connect(g5);
+            o5.type = "square";
+            g5.connect(context5.destination);
+            o5.start(0);
+            g5.gain.exponentialRampToValueAtTime(0.00001, context5.currentTime + 1.5);
+        }
+
+        let playNoteTriangle5 = document.getElementById("sound-note-triangle-5");
+        playNoteTriangle5.onclick = (e) => {
+            e.preventDefault();
+
+            o5 = context5.createOscillator();
+            g5 = context5.createGain();
+            o5.connect(g5);
+            o5.type = "triangle";
+            g5.connect(context5.destination);
+            o5.start(0);
+            g5.gain.exponentialRampToValueAtTime(0.00001, context5.currentTime + 1.5);
+        }
+
+        let playNoteSawtooth5 = document.getElementById("sound-note-sawtooth-5");
+        playNoteSawtooth5.onclick = (e) => {
+            e.preventDefault();
+
+            o5 = context5.createOscillator();
+            g5 = context5.createGain();
+            o5.connect(g5);
+            o5.type = "sawtooth";
+            g5.connect(context5.destination);
+            o5.start(0);
+            g5.gain.exponentialRampToValueAtTime(0.00001, context5.currentTime + 1.5);
+        }
+
+    </script>
+</body>
+</html>

@@ -115,7 +115,6 @@ function clockPause () {
 
 
 function clockReset () {
-    if (clockElapsed == null) return;
     clearTimeout(clockTimeout);
     clockTimeout = null;
     clearInterval(clockElapsed);

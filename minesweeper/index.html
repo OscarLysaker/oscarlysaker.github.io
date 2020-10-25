@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Minesweeper JS</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,600;0,700;0,800;1,300;1,400;1,600;1,700;1,800&amp;display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --table-border-spacing: 0px;
+
+            --cell-size: 40px;
+            --cell-border-size: 1px;
+
+            --font-open-sans: 'Open Sans', sans-serif;
+
+            --color-cell-closed: rgb(61, 61, 61);
+            --color-cell-open: white;
+            --color-flag: rgb(255, 152, 152);
+            --color-digit: black;
+            --color-cell-bomb: rgb(235, 173, 173);
+            --color-bomb: red;
+        }
+
+        body {
+            font-family: var(--font-open-sans);
+        }
+
+        table {
+            table-layout: fixed;
+            border-collapse: collapse;
+            border: 2px solid black;
+            display: table;
+            box-sizing: border-box;
+            border-spacing: var(--table-border-spacing);
+        }
+
+        table[data-table-prevent-click] {
+            pointer-events: none;
+        }
+
+        table tr {
+            border-bottom: 1px solid black;
+            padding: none;
+        }
+
+        table tr:last-child {
+            border-bottom: none;
+        }
+
+        table tr th.grid-cell {
+            width: var(--cell-size);
+            height: var(--cell-size);
+            border-right: 1px solid black;
+            cursor: pointer;
+            padding: none;
+
+            color: var(--color-digit);
+        }
+
+        table tr th.grid-cell:last-child {
+            border-right: none;
+        }
+
+        table tr th.grid-cell[data-cell-state="open"] {
+            background-color: var(--color-cell-open);
+        }
+
+        table tr th.grid-cell[data-cell-state="closed"] {
+            background-color: var(--color-cell-closed);
+        }
+
+        table tr th.grid-cell[data-cell-state="flag"] {
+            background-color: var(--color-cell-closed);
+            color: var(--color-flag);
+        }
+
+        table tr th.grid-cell[data-cell-state="bomb"] {
+            background-color: var(--color-cell-bomb);
+            color: var(--color-bomb);
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <a href="../index.html">Go back</a>
+    </div>
+
+    <div id="minesweeper-root"></div>
+
+    <script>
+        
+        // Settings
+        let gridHeight = 12;
+        let gridWidth = 10;
+        let numBombs = 10;
+        let gameGrid = [];
+
+        let root = document.getElementById("minesweeper-root");
+        let cells = [];
+
+        let table = document.createElement("table");
+
+        let gameRunning = false;
+
+        // Button
+        let resetButton = document.createElement("button");
+        resetButton.onclick = (e) => { reset(); }
+        resetButton.innerText = "Reset";
+        root.append(resetButton);
+
+        let smallButton = document.createElement("button");
+        smallButton.onclick = (e) => {
+            gridHeight = 12;
+            gridWidth = 10;
+            numBombs = 10;
+            buildBoard();
+            reset();
+        }
+        smallButton.innerText = "Small board";
+        root.append(smallButton);
+
+        let mediumButton = document.createElement("button");
+        mediumButton.onclick = (e) => {
+            gridHeight = 18;
+            gridWidth = 12;
+            numBombs = 30;
+            buildBoard();
+            reset();
+        }
+        mediumButton.innerText = "Medium board";
+        root.append(mediumButton);
+
+        // Attributes
+        let EL_ATTR = {
+            CELL_INDEX : 'data-cell-pos-index',
+            CELL_X : 'data-cell-pos-x',
+            CELL_Y : 'data-cell-pos-y',
+            CELL_CLASS : 'grid-cell',
+            CELL_STATE : 'data-cell-state',
+            TABLE_PREVENT_CLICK : 'data-table-prevent-click'
+        }
+
+        let CELL_STATE = {
+            OPEN : 'open',
+            CLOSED : 'closed',
+            FLAG : 'flag',
+            BOMB : 'bomb'
+        }
+        
+        for (let y = 0; y < gridHeight; y++) {
+            let tempRow = document.createElement("tr");
+            for (let x = 0; x < gridWidth; x++) {
+                let tempCell = document.createElement("th");
+                tempCell.setAttribute(EL_ATTR.CELL_X, x);
+                tempCell.setAttribute(EL_ATTR.CELL_Y, y);
+                tempCell.setAttribute("class", EL_ATTR.CELL_CLASS);
+                tempCell.innerText = "1";
+                cells.push(tempCell);
+                (function (cell, rightClickedCell) {
+                    cell.oncontextmenu = (e) => {
+                        console.log("Pressed right click...");
+                        rightClickedCell(cell);
+                        return false;
+                    }
+                })(tempCell, rightClickedCell);
+                (function(cell, clickedCell){
+                    cell.onclick = (e) => {
+                        e.preventDefault();
+                        console.log("Pressed left click...");
+                        clickedCell(cell);
+                    }
+                })(tempCell, clickedCell);
+                tempRow.append(tempCell);
+            }
+            table.append(tempRow);
+        }
+
+        root.append(table);
+
+        function buildBoard () {
+
+            table.innerHTML = "";
+            cells = [];
+            for (let y = 0; y < gridHeight; y++) {
+                let tempRow = document.createElement("tr");
+                for (let x = 0; x < gridWidth; x++) {
+                    let tempCell = document.createElement("th");
+                    tempCell.setAttribute(EL_ATTR.CELL_X, x);
+                    tempCell.setAttribute(EL_ATTR.CELL_Y, y);
+                    tempCell.setAttribute("class", EL_ATTR.CELL_CLASS);
+                    tempCell.innerText = "";
+                    cells.push(tempCell);
+                    (function (cell, rightClickedCell) {
+                        cell.oncontextmenu = (e) => {
+                            console.log("Pressed right click...");
+                            rightClickedCell(cell);
+                            return false;
+                        }
+                    })(tempCell, rightClickedCell);
+                    (function(cell, clickedCell){
+                        cell.onclick = (e) => {
+                            e.preventDefault();
+                            console.log("Pressed left click...");
+                            clickedCell(cell);
+                        }
+                    })(tempCell, clickedCell);
+                    tempRow.append(tempCell);
+                }
+                table.append(tempRow);
+            }
+        }
+
+
+        function reset () {
+            console.log("Reset grid...");
+
+            table.removeAttribute(EL_ATTR.TABLE_PREVENT_CLICK);
+
+            gameRunning = false;
+
+            for (let i = 0; i < cells.length; i++) {
+                cells[i].setAttribute(EL_ATTR.CELL_STATE, CELL_STATE.CLOSED);
+                cells[i].innerText = "";
+            }
+        }
+
+        function createNewGameGrid (numBombs, startIndex) {
+            gameGrid = [];
+
+            for (let i = 0; i < gridHeight * gridWidth; i++) {
+                gameGrid.push(0);
+            }
+
+            for (let i = 0; i < numBombs; i++) {
+                let bombIndex = -1;
+                while (bombIndex == -1) {
+                    let checkIndex = Math.round(Math.random() * (gameGrid.length - 1));
+                    if (checkIndex != startIndex && gameGrid[checkIndex] == 0) bombIndex = checkIndex;
+                }
+                gameGrid[bombIndex] = -1;
+            }
+
+            for (let i = 0; i < gameGrid.length; i++) {
+                if (gameGrid[i] != -1) gameGrid[i] = getNumBombs(i, gameGrid);
+            }
+
+            for (let i = 0; i < cells.length; i++) {
+                cells[i].innerText = "";
+            }
+        }
+
+        function getNumBombs (index, grid) {
+            let numBombs = 0;
+            
+            let xIndex = index % gridWidth;
+            let yIndex = Math.floor(index / gridWidth);
+            
+            if (xIndex > 0 && grid[index-1] == -1) numBombs++; // Check left cell
+            if (xIndex < gridWidth-1 && grid[index+1] == -1) numBombs++; // Check right cell
+
+            if (yIndex > 0 && grid[index - gridWidth] == -1) numBombs++; // Check top cell
+            if (yIndex < gridHeight-1 && grid[index + gridWidth] == -1) numBombs++;
+
+            if (yIndex > 0) {
+                if (xIndex > 0 && grid[index - gridWidth - 1] == -1) numBombs++; // Check top left cell
+                if (xIndex < gridWidth-1 && grid[index - gridWidth + 1] == -1) numBombs++; // Check top right cell
+            }
+
+            if (yIndex < gridHeight-1) {
+                if (xIndex > 0 && grid[index + gridWidth - 1] == -1) numBombs++; // Check bottom left cell
+                if (xIndex < gridWidth-1 && grid[index + gridWidth + 1] == -1) numBombs++; // Check bottom right cell
+            }
+
+            return numBombs;
+        }
+
+        function clickedCell (cell) {
+            let cellIndexX = parseInt(cell.getAttribute(EL_ATTR.CELL_X));
+            let cellIndexY = parseInt(cell.getAttribute(EL_ATTR.CELL_Y));
+            let cellIndex = cellIndexY * gridWidth + cellIndexX;
+
+            console.log("Clicked cell: " + cellIndex);
+
+            if (!gameRunning) {
+                createNewGameGrid(numBombs, cellIndex);
+                gameRunning = true;
+            }
+
+            if (cells[cellIndex].getAttribute(EL_ATTR.CELL_STATE) != CELL_STATE.FLAG) {
+                if (gameGrid[cellIndex] == -1) {
+                    failedGame();
+                    return;
+                } else if (gameGrid[cellIndex] == 0) {
+                    console.log("Opened cell recursive");
+                    openRecursive(cellIndex);
+                } else {
+                    console.log("Opened cell");
+                    openNum(cellIndex);
+                }
+            }
+
+            checkGameDone();
+        }
+
+        function openRecursive (index) {
+            let indexX = index % gridWidth;
+            let indexY = Math.floor(index / gridWidth);
+            cells[index].setAttribute(EL_ATTR.CELL_STATE, CELL_STATE.OPEN);
+            if (gameGrid[index] > 0 && gameGrid[index] < 10) cells[index].innerText = gameGrid[index];
+
+            console.log("Opened cell: " + index);
+
+            // Open left
+            if (indexX > 0 && (gameGrid[index-1] > 0 && gameGrid[index-1] < 10) && cells[index-1].getAttribute(EL_ATTR.CELL_STATE) == CELL_STATE.CLOSED) openNum(index-1);
+            // Open right
+            if (indexX < gridWidth-1 && (gameGrid[index+1] > 0 && gameGrid[index+1] < 10) && cells[index+1].getAttribute(EL_ATTR.CELL_STATE) == CELL_STATE.CLOSED) openNum(index+1);
+            // Open top
+            if (indexY > 0 && (gameGrid[index-gridWidth] > 0 && gameGrid[index-gridWidth] < 10) && cells[index-gridWidth].getAttribute(EL_ATTR.CELL_STATE) == CELL_STATE.CLOSED) openNum(index-gridWidth);
+            // Open bottom
+            if (indexY < gridHeight-1 && (gameGrid[index+gridWidth] > 0 && gameGrid[index+gridWidth] < 10) && cells[index+gridWidth].getAttribute(EL_ATTR.CELL_STATE) == CELL_STATE.CLOSED) openNum(index+gridWidth);
+            
+            // Open top left
+            if (indexX > 0 && indexY > 0 && (gameGrid[index-gridWidth-1] > 0 && gameGrid[index-gridWidth-1] < 10) && cells[index-gridWidth-1].getAttribute(EL_ATTR.CELL_STATE) == CELL_STATE.CLOSED) openNum(index-gridWidth-1);
+            // Open top right
+            if (indexX < gridWidth-1 && indexY > 0 && (gameGrid[index-gridWidth+1] > 0 && gameGrid[index-gridWidth+1] < 10) && cells[index-gridWidth+1].getAttribute(EL_ATTR.CELL_STATE) == CELL_STATE.CLOSED) openNum(index-gridWidth+1);
+            // Open top left
+            if (indexY < gridHeight-1 && indexX > 0 && (gameGrid[index+gridWidth-1] > 0 && gameGrid[index+gridWidth-1] < 10) && cells[index+gridWidth-1].getAttribute(EL_ATTR.CELL_STATE) == CELL_STATE.CLOSED) openNum(index+gridWidth-1);
+            // Open bottom right
+            if (indexY < gridHeight-1 && indexX < gridWidth-1 && (gameGrid[index+gridWidth+1] > 0 && gameGrid[index+gridWidth+1] < 10) && cells[index+gridWidth+1].getAttribute(EL_ATTR.CELL_STATE) == CELL_STATE.CLOSED) openNum(index+gridWidth+1);
+
+            // Open top
+            if (indexY > 0 && gameGrid[index-gridWidth] == 0 && cells[index-gridWidth].getAttribute(EL_ATTR.CELL_STATE) == CELL_STATE.CLOSED) openRecursive(index-gridWidth);
+            // Open left
+            if (indexX > 0 && gameGrid[index-1] == 0 && cells[index-1].getAttribute(EL_ATTR.CELL_STATE) == CELL_STATE.CLOSED) openRecursive(index-1);
+            // Open right
+            if (indexX < gridWidth-1 && gameGrid[index+1] == 0 && cells[index+1].getAttribute(EL_ATTR.CELL_STATE) == CELL_STATE.CLOSED) openRecursive(index+1);
+            // Open bottom
+            if (indexY < gridHeight-1 && gameGrid[index+gridWidth] == 0 && cells[index+gridWidth].getAttribute(EL_ATTR.CELL_STATE) == CELL_STATE.CLOSED) openRecursive(index+gridWidth);
+        
+            // Open top left
+            if (indexX > 0 && indexY > 0 && gameGrid[index-gridWidth-1] == 0 && cells[index-gridWidth-1].getAttribute(EL_ATTR.CELL_STATE) == CELL_STATE.CLOSED) openRecursive(index-gridWidth-1);
+            // Open top right
+            if (indexX < gridWidth-1 && indexY > 0 && gameGrid[index-gridWidth+1] == 0 && cells[index-gridWidth+1].getAttribute(EL_ATTR.CELL_STATE) == CELL_STATE.CLOSED) openRecursive(index-gridWidth+1);
+            // Open top left
+            if (indexY < gridHeight-1 && indexX > 0 && gameGrid[index+gridWidth-1] == 0 && cells[index+gridWidth-1].getAttribute(EL_ATTR.CELL_STATE) == CELL_STATE.CLOSED) openRecursive(index+gridWidth-1);
+            // Open bottom right
+            if (indexY < gridHeight-1 && indexX < gridWidth-1 && gameGrid[index+gridWidth+1] == 0 && cells[index+gridWidth+1].getAttribute(EL_ATTR.CELL_STATE) == CELL_STATE.CLOSED) openRecursive(index+gridWidth+1);
+        }
+
+        function openNum (index) {
+            let indexX = index % gridWidth;
+            let indexY = Math.floor(index / gridHeight);
+            cells[index].setAttribute(EL_ATTR.CELL_STATE, CELL_STATE.OPEN);
+            if (gameGrid[index] > 0 && gameGrid[index] < 10) cells[index].innerText = gameGrid[index];
+
+            // Open left
+            if (indexX > 0 && gameGrid[index-1] == 0 && cells[index-1].getAttribute(EL_ATTR.CELL_STATE) == CELL_STATE.CLOSED) openRecursive(index-1);
+            // Open right
+            if (indexX < gridWidth-1 && gameGrid[index+1] == 0 && cells[index+1].getAttribute(EL_ATTR.CELL_STATE) == CELL_STATE.CLOSED) openRecursive(index+1);
+            // Open top
+            if (indexY > 0 && gameGrid[index-gridWidth] == 0 && cells[index-gridWidth].getAttribute(EL_ATTR.CELL_STATE) == CELL_STATE.CLOSED) openRecursive(index-gridWidth);
+            // Open bottom
+            if (indexY < gridHeight-1 && gameGrid[index+gridWidth] == 0 && cells[index+gridWidth].getAttribute(EL_ATTR.CELL_STATE) == CELL_STATE.CLOSED) openRecursive(index+gridWidth);
+        
+            // Open top left
+            if (indexX > 0 && indexY > 0 && gameGrid[index-gridWidth-1] == 0 && cells[index-gridWidth-1].getAttribute(EL_ATTR.CELL_STATE) == CELL_STATE.CLOSED) openRecursive(index-gridWidth-1);
+            // Open top right
+            if (indexX < gridWidth-1 && indexY > 0 && gameGrid[index-gridWidth+1] == 0 && cells[index-gridWidth+1].getAttribute(EL_ATTR.CELL_STATE) == CELL_STATE.CLOSED) openRecursive(index-gridWidth+1);
+            // Open top left
+            if (indexY < gridHeight-1 && indexX > 0 && gameGrid[index+gridWidth-1] == 0 && cells[index+gridWidth-1].getAttribute(EL_ATTR.CELL_STATE) == CELL_STATE.CLOSED) openRecursive(index+gridWidth-1);
+            // Open bottom right
+            if (indexY < gridHeight-1 && indexX < gridWidth-1 && gameGrid[index+gridWidth+1] == 0 && cells[index+gridWidth+1].getAttribute(EL_ATTR.CELL_STATE) == CELL_STATE.CLOSED) openRecursive(index+gridWidth+1);
+        }
+
+        function failedGame () {
+            for (let i = 0; i < cells.length; i++) {
+                if (gameGrid[i] == -1 && cells[i].getAttribute(EL_ATTR.CELL_STATE) == CELL_STATE.CLOSED) {
+                    cells[i].setAttribute(EL_ATTR.CELL_STATE, CELL_STATE.BOMB);
+                    cells[i].innerText = "B";
+                }
+            }
+
+            table.setAttribute(EL_ATTR.TABLE_PREVENT_CLICK, "");
+            gameRunning = false;
+        }
+
+        function rightClickedCell (cell) {
+            if (!gameRunning) return;
+
+            if (cell.getAttribute(EL_ATTR.CELL_STATE) != CELL_STATE.CLOSED) return;
+
+            cell.setAttribute(EL_ATTR.CELL_STATE, CELL_STATE.FLAG);
+            cell.innerText = "F";
+
+            checkGameDone();
+        }
+
+        function checkGameDone () {
+            for (let i = 0; i < cells.length; i++) {
+                if (gameGrid[i] == -1 && cells[i].getAttribute(EL_ATTR.CELL_STATE) != CELL_STATE.FLAG) return;
+            }
+            wonGame();
+        }
+
+        function wonGame () {
+            table.setAttribute(EL_ATTR.TABLE_PREVENT_CLICK, "");
+            alert("You won!");
+            gameRunning = false;
+        }
+
+    </script>
+</body>
+</html>

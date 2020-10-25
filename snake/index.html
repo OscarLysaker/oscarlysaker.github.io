@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, user-scalable=no">
+    <title>Snake JS</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,600;0,700;0,800;1,300;1,400;1,600;1,700;1,800&amp;display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --font-open-sans: 'Open Sans', sans-serif;
+        }
+
+        a {
+            color: white;
+        }
+
+        html, body {
+            margin: 0;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: var(--font-open-sans);
+            background-color: rgb(26, 29, 36);
+            margin: 0;
+            padding: 0;
+        }
+
+        canvas {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    
+    <div><a href="../index.html" style="position:absolute; top:0px;">Go back</a></div>
+
+    <div id="game-root"></div>
+
+    <script>
+
+        let root = document.getElementById("game-root");
+        let canvas = null;
+        let ctx = null;
+
+        let cellSize = 0;
+        let cellsX = 0;
+        let cellsY = 0;
+
+        let xv = yv = 0;
+        let px = py = 10;
+        let trail = [];
+        let tail = 5;
+
+        let ax = ay = 15;
+
+        let gameLoop = null;
+
+        function createCanvas () {
+            if (canvas != null) {
+                root.innerHTML = "";
+            }
+
+            let w = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+
+            let h = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+
+            let wRest = 0;
+            let hRest = 0;
+
+            cellSize = w / 30;
+            hRest = h % cellSize;
+            h -= hRest;
+
+            cellsX = Math.round(w / cellSize);
+            cellsY = Math.round(h / cellSize);
+
+            canvas = document.createElement("canvas");
+            canvas.setAttribute("id", "game-canvas");
+            canvas.setAttribute("width", w);
+            canvas.setAttribute("height", h);
+            canvas.setAttribute('style', 'margin-top:' + hRest / 2 +'px;')
+            root.append(canvas);
+
+            ctx = canvas.getContext("2d");
+        }
+
+        window.onload = function () {
+            document.addEventListener("keydown", keyPush);
+            restartGame();
+        }
+        
+        window.onresize = (e) => {
+            console.log("Resized window...");
+            restartGame();
+        }
+
+        function restartGame () {
+            clearInterval(gameLoop);
+            createCanvas();
+            gameLoop = setInterval(update, 1000/15);
+        }
+
+        function keyPush(e) {
+
+            switch (e.keyCode) {
+                case 37: xv = -1; yv =  0; break;
+                case 38: xv =  0; yv = -1; break;
+                case 39: xv =  1; yv =  0; break;
+                case 40: xv =  0; yv =  1; break;
+            }
+        }
+
+        function update () {
+
+            px += xv;
+            py += yv;
+
+            if (px < 0) px = cellsX-1;
+            if (px > cellsX-1) px = 0;
+            if (py < 0) py = cellsY-1;
+            if (py > cellsY-1) py = 0;
+
+            ctx.fillStyle = "rgb(36, 40, 49)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = "lime";
+            for (let i = 0; i < trail.length; i++) {
+                ctx.fillRect(trail[i].x * cellSize, trail[i].y * cellSize, cellSize, cellSize);
+                if (trail[i].x == px && trail[i].y == py) tail = 5;
+            }
+
+            trail.push({x:px, y:py});
+            while (trail.length > tail) trail.shift();
+
+            if (ax == px && ay == py) {
+                tail++;
+                ax = Math.floor(Math.random() * cellsX);
+                ay = Math.floor(Math.random() * cellsY);
+            }
+
+            ctx.fillStyle = "red";
+            ctx.fillRect(ax * cellSize, ay * cellSize, cellSize, cellSize);
+        }
+
+    </script>
+</body>
+</html>

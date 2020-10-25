@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Morse JS</title>
+</head>
+<body>
+    <form>
+        <fieldset>
+            <legend>Sound player</legend>
+            <label>Volume</label>
+            <div>
+                <input type="range" name="vol" value="0.5" min="0" max="1" oninput="setVolume(this.value);" step="0.01">
+            </div>
+            <div>
+                <input name="play" type="button" onclick="playSound(form.vol.value); this.style.display = 'none'; form.stop.style.display = 'inline';" value="Play ►" style>
+                <input name="stop" style="display: none;" type="button" onclick="stopSound(); this.style.display = 'none'; form.play.style = 'inline';" value="Stop ❙❙">
+            </div>
+        </fieldset>
+    </form>
+
+
+    <form>
+        <fieldset>
+            <legend>Morse player</legend>
+            <label>Volume</label>
+            <div>
+                <input type="range" name="vol" value="0.5" min="0" max="1" oninput="setVolume(this.value);" step="0.01">
+            </div>
+            <div>
+                <input name="stop" type="button" onclick='stopMorse();' value="Stop">
+                <input name="play" type="button" onclick='playMorse("a");' value="A">
+                <input name="play" type="button" onclick='playMorse("e");' value="E">
+                <input name="play" type="button" onclick='playMorse("t");' value="T">
+                <input name="play" type="button" onclick='playMorse("c");' value="C">
+            </div>
+        </fieldset>
+    </form>
+
+    <script>
+        let context = null;
+        let setVolume = function () {}
+        let playSound = function (volume) {}
+        let stopSound = function () {}
+        let o = null;
+        let g = null;
+        let volume = 0.5;
+
+        let morseLengthShort = 60;
+        let morseLengthLong = 220;
+        let morseLengthSpace = 50;
+
+        let soundPlaying = false;
+
+        setVolume = function (value) {
+            if (context == null) return;
+            if (!soundPlaying) return;
+            volume = value;
+            g.gain.value = value;
+        }
+
+        playSound = function (volume) {
+            if (context == null) context = new AudioContext();
+            if (soundPlaying) return;
+            soundPlaying = true;
+            console.log("Playing sound");
+            o = context.createOscillator();
+            g = context.createGain();
+            o.connect(g);
+            g.connect(context.destination);
+            g.gain.value = volume;
+            o.start();
+        }
+
+        stopSound = function () {
+            if (context == null) return;
+            if (!soundPlaying) return;
+            soundPlaying = false;
+            console.log("Stopped sound");
+            g.gain.value = volume;
+            g.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + 0.4);
+        }
+
+        function stopMorse () {
+
+        }
+
+        let morseArray = [
+            {'char':'a', 'pattern':'01'},
+            {'char':'b', 'pattern':'1000'},
+            {'char':'c', 'pattern':'1010'},
+            {'char':'d', 'pattern':'100'},
+            {'char':'e', 'pattern':'0'},
+            {'char':'f', 'pattern':'0010'},
+            {'char':'g', 'pattern':'110'},
+            {'char':'h', 'pattern':'0000'},
+            {'char':'i', 'pattern':'00'},
+            {'char':'j', 'pattern':'0111'},
+            {'char':'k', 'pattern':'101'},
+            {'char':'l', 'pattern':'0100'},
+            {'char':'m', 'pattern':'11'},
+            {'char':'n', 'pattern':'10'},
+            {'char':'o', 'pattern':'111'},
+            {'char':'p', 'pattern':'0110'},
+            {'char':'q', 'pattern':'1101'},
+            {'char':'r', 'pattern':'010'},
+            {'char':'s', 'pattern':'000'},
+            {'char':'t', 'pattern':'1'},
+            {'char':'u', 'pattern':'001'},
+            {'char':'v', 'pattern':'0001'},
+            {'char':'w', 'pattern':'011'},
+            {'char':'x', 'pattern':'1001'},
+            {'char':'y', 'pattern':'1011'},
+            {'char':'z', 'pattern':'1100'}
+        ]
+
+        function playMorse (char) {
+            let morseChar = char;
+            let morsePattern = null;
+            for (let i = 0; i < morseArray.length; i++) {
+                if (morseArray[i].char == morseChar) {
+                    morsePattern = morseArray[i].pattern;
+                    break;
+                }
+            }
+
+            if (morsePattern == null) return;
+
+            let playNext = function (charsLeft="", _ctx=null, _o=null, _g=null) {
+                if (charsLeft.length < 1) {
+                    if (_ctx != null) {
+                        _o.disconnect();
+                        _g.disconnect();
+                        _o = null;
+                        _g = null;
+                        _ctx.close();
+                        _ctx = null;
+                    }
+                    return;
+                }
+
+                if (_ctx == null) {
+                    _ctx = new AudioContext();
+                    _o = _ctx.createOscillator();
+                    _g = _ctx.createGain();
+                    _o.connect(_g);
+                    _g.connect(_ctx.destination);
+                    _g.gain.value = 0.00001;
+                    _o.start();
+                }
+
+                (function (remaining, next, ctx, o, g) {
+                    g.gain.value = 0.001;
+                    g.gain.exponentialRampToValueAtTime(volume, ctx.currentTime + 0.015);
+                    let noteLength = (remaining.charAt(0) == "0") ? morseLengthShort : morseLengthLong;
+                    setTimeout(() => {
+                        g.gain.value = volume;
+                        g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.015);
+                        remaining = remaining.substring(1);
+                        setTimeout(() => {
+                            next(remaining, ctx, o, g);
+                        }, morseLengthSpace);
+                    }, noteLength);
+                })(charsLeft, playNext, _ctx, _o, _g);
+            }
+
+            setTimeout(() => {
+
+            }, );
+
+            playNext(morsePattern);
+        }
+
+    </script>
+</body>
+</html>

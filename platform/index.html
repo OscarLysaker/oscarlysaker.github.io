@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Platform JS</title>
+
+    <style>
+
+        html, body {
+            overflow: hidden;
+            padding: 0;
+            margin: 0;
+        }
+
+        #game-canvas {
+            background-color: orange;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-root"></div>
+
+    <script>
+
+        let root = document.getElementById("game-root");
+        let canvas = null;
+
+        function wasInitialized () {
+            
+        }
+
+        function initCanvas () {
+            root.innerHTML = "";
+            canvas = document.createElement("canvas");
+            canvas.setAttribute("width", window.innerWidth);
+            canvas.setAttribute("height", window.innerHeight);
+            canvas.setAttribute("id", "game-canvas");
+            root.append(canvas);
+
+            
+
+            setInterval(update, 100);
+        }
+
+        function Entity (width, height, color) {
+            this.x = .0;
+            this.y = .0;
+            this.width = width;
+            this.height = height;
+            this.color = color;
+        }
+
+        var entities = [];
+
+        window.onload = function (e) {
+            initCanvas();
+        }
+
+        window.onresize = function (e) {
+            initCanvas();
+        }
+
+        function update () {
+            
+        }
+    </script>
+</body>
+</html>

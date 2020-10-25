@@ -63,29 +63,44 @@
     --clock-font-size: 5vmin;
 }
 
-html {
-    font-family: var(--font-open-sans);
-    font-weight: 400;
+:root {
+    --top-bar-logo-font-size: 5vmin;
+    --top-bar-block-start: calc(var(--top-bar-logo-font-size) * 1.0);
+    --top-bar-block-stop: calc(var(--top-bar-logo-font-size) * 0.2);
+    --top-bar-height: calc(var(--top-bar-logo-font-size) * 1.2);
+    --top-bar-height-full: calc(var(--top-bar-height) + var(--top-bar-block-stop) + var(--top-bar-block-start));
 }
 
-body {
+#sudoku-root-top-container {
+    height: var(--top-bar-height-full);
+    width: 100%;
+}
+
+#sudoku-root-top-container #sudoku-logo {
+    width:fit-content;
+    height: fit-content;
+    font-size: var(--top-bar-logo-font-size);
+    margin-block-start: var(--top-bar-block-start);
+    margin-block-end: var(--top-bar-block-stop);
+    display: inline-block;
+    background-color: red;
+}
+
+#sudoku-root-top-container #sudoku-pause-button {
+    width: min-content;
+    height: var(--top-bar-logo-font-size);
+    cursor: pointer;
+    background-color: green;
     margin: 0;
+    padding: 0;
+    float: right;
 }
 
-h3 {
-    width:min-content;
-    font-size: 7vmin;
-    margin-block-start: 4vmin;
-    margin-block-end: 3vmin;
-}
-
-.unselectable {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
+#sudoku-root-top-container #sudoku-pause-button img {
+    width: var(--top-bar-logo-font-size);
+    height: var(--top-bar-logo-font-size);
+    pointer-events: none;
+    position: relative;
 }
 
 /* Table Basic Styling */

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset = "utf-8" />
+
+    <title>Net JS</title>
+    <style></style>
+</head>
+<body>
+
+    <button onclick="sendMessage();">Send message</button>
+
+    <div id="output-root"></div>
+
+    <script>
+        let outputRoot = document.getElementById("output-root");
+        
+        const socket = new WebSocket('ws://localhost:8080');
+
+        socket.onerror = function (ws, e) {
+            console.log("Error: " + e);
+        }
+
+        socket.addEventListener('open', function (event) {
+            socket.send('Hello Server!');
+            socket.onmessage = (e) => {
+                console.log("message: " + e.data);
+            }
+            console.log("Connected!");
+        });
+
+        // Listen for messages
+        socket.addEventListener('message', function (event) {
+            console.log('Message from server ' + event.data);
+        });
+
+        window.onload = (e) => {
+
+        }
+
+        function sendMessage () {
+            console.log(socket.readyState);
+            switch (socket.readyState) {
+                case 0: console.log("Still in connecting state..."); break;
+                default: console.log("Unknown state: " + socket.readyState);
+            }
+            //socket.send("Hello!");
+        }
+    </script>
+</body>
+</html>

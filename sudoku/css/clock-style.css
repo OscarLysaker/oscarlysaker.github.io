@@ -1,7 +1,7 @@
 :root {
     --font-open-sans: 'Open Sans', sans-serif;
 
-    --clock-font-size: 20px;
+    --clock-font-size: 18px;
     --clock-change-time: 0.7s;
     --clock-digit-height: calc(var(--clock-font-size) * 1.2);
     --clock-root-height: calc(var(--clock-digit-height));
