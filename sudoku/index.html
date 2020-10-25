@@ -344,9 +344,11 @@
                 buttonNum.setAttribute("data-button-value", grid.possibleValues[i])
                 buttonNum.innerText = String(grid.possibleValues[i]);
                 buttonNum.addEventListener("click", (button, e) => {
-                    let newType = CELL_TYPE.NORMAL;
-                    if (pencil.active) newType = CELL_TYPE.PENCIL;
-                    setCellValue(null, grid.possibleValues[i], true, true, newType);
+                    //let newType = CELL_TYPE.NORMAL;
+                    //if (pencil.active) newType = CELL_TYPE.PENCIL;
+                    //setCellValue(null, grid.possibleValues[i], true, true, newType);
+
+                    selectionSetValue(grid.possibleValues[i]);
                 });
                 buttonContainerInputNumbers.append(buttonNum);
                 numberButtons.push(buttonNum);
