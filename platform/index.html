@@ -22,47 +22,139 @@
 
     <script>
 
-        let root = document.getElementById("game-root");
-        let canvas = null;
+        var platGame = function () {
 
-        function wasInitialized () {
-            
-        }
+            var root = null;
+            var entities = [];
+            var gameLoop = null;
 
-        function initCanvas () {
-            root.innerHTML = "";
-            canvas = document.createElement("canvas");
-            canvas.setAttribute("width", window.innerWidth);
-            canvas.setAttribute("height", window.innerHeight);
-            canvas.setAttribute("id", "game-canvas");
-            root.append(canvas);
+            var cellSize = 40;
 
-            
+            var entityControllerIndex = 0;
 
-            setInterval(update, 100);
-        }
+            var maxSpeed = 5;
+            var friction = .9;
+            var stopLim = 0.2;
+            var acceleration = 0.4;
 
-        function Entity (width, height, color) {
-            this.x = .0;
-            this.y = .0;
-            this.width = width;
-            this.height = height;
-            this.color = color;
-        }
+            var keys = {
+                xv : 0,
+                yv : 0
+            }
 
-        var entities = [];
+            var init = function (docRoot) {
+                if (root != null) return;
+                root = docRoot;
 
-        window.onload = function (e) {
-            initCanvas();
-        }
+                canvas.init(root);
 
-        window.onresize = function (e) {
-            initCanvas();
-        }
+                entities.push(new Entity(40, 40, "#ff00ff"));
 
-        function update () {
-            
-        }
+                gameLoop = setInterval(update, 1000 / 60);
+
+                document.addEventListener("keydown", keyPush);
+                document.addEventListener("keyup", keyRelease);
+            }
+
+            var keyPush = function (e) {
+                switch (e.keyCode) {
+                    case 37: keys.xv = -1; break;
+                    case 38: keys.yv = -1; break;
+                    case 39: keys.xv =  1; break;
+                    case 40: keys.yv =  1; break;
+                }
+            }
+
+            var keyRelease = function (e) {
+                switch (e.keyCode) {
+                    case 37: keys.xv = 0; break; // Left
+                    case 38: keys.yv = 0; break; // Up
+                    case 39: keys.xv = 0; break; // Right
+                    case 40: keys.yv = 0; break; // Down
+                }
+            }
+
+            var canvas = {
+                obj : null,
+                ctx : null,
+                init : function (docRoot) {
+                    if (docRoot == null) return;
+                    if (this.obj != null) docRoot.innerHTML = "";
+
+                    var w = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+                    var h = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+
+                    this.obj = document.createElement("canvas");
+                    this.obj.setAttribute("width", w);
+                    this.obj.setAttribute("height", h);
+                    this.obj.setAttribute("id", "game-canvas");
+                    docRoot.append(this.obj);
+
+                    this.ctx = this.obj.getContext("2d");
+                }
+            }
+
+            function Entity (width, height, color) {
+                this.x = .0;
+                this.y = .0;
+                this.vx = .0;
+                this.vy = .0;
+                this.width = width;
+                this.height = height;
+                this.color = color;
+            }
+
+            var update = function () {
+
+                for (var i = 0, j = entities.length; i < j; i++) {
+                    var entity = entities[i];
+                    if (i == entityControllerIndex) {
+                        entity.vx += acceleration * keys.xv;
+                        entity.vy += acceleration * keys.yv;
+
+                        if (entity.vx > maxSpeed) entity.vx = maxSpeed;
+                        if (entity.vy > maxSpeed) entity.vy = maxSpeed;
+                        if (entity.vx < maxSpeed * -1) entity.vx = maxSpeed * -1;
+                        if (entity.vy < maxSpeed * -1) entity.vy = maxSpeed * -1;
+                    }
+
+                    entity.x += entity.vx;
+                    entity.y += entity.vy;
+
+                    entity.vx *= friction;
+                    entity.vy *= friction;
+
+                    if (entity.x < 0) {
+                        if (entity.vx < 0) entity.vx = 0;
+                        entity.x = 0;
+                    } else if (entity.x + entity.width > window.innerWidth) {
+                        if (entity.vx > 0) entity.vx = 0;
+                        entity.x = window.innerWidth - entity.width;
+                    }
+
+                    if (entity.y < 0) {
+                        if (entity.vy < 0) entity.vy = 0;
+                        entity.y = 0;
+                    } else if (entity.y + entity.height > window.innerHeight) {
+                        if (entity.vy > 0) entity.vy = 0;
+                        entity.y = window.innerHeight - entity.height;
+                    }
+                }
+
+                canvas.ctx.fillStyle = "rgb(36, 40, 49)";
+                canvas.ctx.fillRect(0, 0, canvas.obj.width, canvas.obj.height);
+
+                canvas.ctx.fillStyle = "lime";
+                for (var i = 0, j = entities.length; i < j; i++) {
+                    canvas.ctx.fillRect(entities[i].x, entities[i].y, entities[i].width, entities[i].height);
+                }
+            }
+
+            return {init:init};
+        }();
+
+        platGame.init(document.getElementById("game-root"));
+
     </script>
 </body>
 </html>

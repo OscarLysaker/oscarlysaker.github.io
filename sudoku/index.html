@@ -135,6 +135,12 @@
                 isPaused = false;
                 table.removeAttribute("data-puzzle-paused");
                 document.getElementById("sudoku-button-pause-img").setAttribute("src", "./svg/pause_pause.svg");
+            },
+            stop : () => {
+                clockPause();
+                isPaused = true;
+                table.removeAttribute("data-puzzle-paused");
+                document.getElementById("sudoku-button-pause-img").setAttribute("src", "./svg/pause_continue.svg");
             }
         }
 
@@ -206,6 +212,10 @@
             ACTIVE : 'active',
             INACTIVE : 'inactive'
         };
+
+
+
+
 
 //      +---------------------------------+
 //      |      Sudoku Initialization      |
@@ -344,10 +354,6 @@
                 buttonNum.setAttribute("data-button-value", grid.possibleValues[i])
                 buttonNum.innerText = String(grid.possibleValues[i]);
                 buttonNum.addEventListener("click", (button, e) => {
-                    //let newType = CELL_TYPE.NORMAL;
-                    //if (pencil.active) newType = CELL_TYPE.PENCIL;
-                    //setCellValue(null, grid.possibleValues[i], true, true, newType);
-
                     selectionSetValue(grid.possibleValues[i]);
                 });
                 buttonContainerInputNumbers.append(buttonNum);
@@ -381,10 +387,12 @@
 
             container.addEventListener("mouseover", () => { mouseOverRoot = true; });
             container.addEventListener("mouseout", () => { mouseOverRoot = false; });
-
-            //createPuzzle(20);
-            //logPuzzleStringAsTable(puzzles.uniques[0]);
         }
+
+
+
+
+
 
 //      +---------------------------+
 //      |      Puzzle Handlers      |
@@ -393,7 +401,6 @@
         function reset () {
             console.log("Resetting sudoku puzzle...");
             selectionRemove();
-            //pencilModeEnd();
 
             pencilToggle(false);
 
@@ -403,10 +410,9 @@
             });
             clock.reset();
             for (let x = 0, xl = cells.length; x < xl; x++) {
-                let cell = cells[x];
-                setCellValue(cell, 0, false, false, CELL_TYPE.EMPTY);
-                removeAllAttributes(cell);
+                setCellValue(cells[x], 0, false, false, CELL_TYPE.EMPTY);
             }
+            removeAllAttributesFromAll();
             logReset();
             arrowRemove();
             console.log("Sudoku successfully reset!");
@@ -440,6 +446,11 @@
             logPuzzleArrayAsTable(puzzle);
         }
 
+
+
+
+
+
 //      +--------------------------------+
 //      |      Interaction Handlers      |
 //      +--------------------------------+
@@ -458,6 +469,11 @@
                 selectionAdd(cell);
             }
         }
+
+
+
+
+
 
 //      +---------------------------+
 //      |      Button Handlers      |
@@ -531,12 +547,11 @@
             cellsSelected.push(cell);
 
             return;
-
-            if (selected.multi.length == 0 || selected.multi.indexOf(cell) < 0) {
-                cell.setAttribute(CELL_ATTR.SELECTED, CELL_SELECTED.MULTI);
-                selected.multi.push(cell);
-            }
         }
+
+
+
+
 
 //      +--------------------------+
 //      |       Drag Handlers      |
@@ -546,6 +561,11 @@
             drag.firstCell = cell;
             dragFirstCell = cell;
         }
+
+
+
+
+
 
 //      +--------------------------+
 //      |      Arrow Handlers      |
@@ -557,11 +577,6 @@
             if (cellsSelected.length == 0) {
                 newX = Math.floor(grid.width / 2);
                 newY = Math.floor(grid.height / 2);
-                //if (cellsX > 0) { newX = 0; newY = Math.floor(grid.height/2);
-                //} else if (cellsX < 0) { newX = grid.width-1; newY = Math.floor(grid.height/2);
-                //} else if (cellsY > 0) { newX = Math.floor(grid.width/2); newY = 0;
-                //} else if (cellsY < 0) { newX = Math.floor(grid.width/2); newY = grid.height-1;
-                //} else return;
             } else {
                 if (arrowCell == null) arrowCell = cellsSelected[cellsSelected.length-1];
                 newX = parseInt(arrowCell.getAttribute(CELL_ATTR.POS_X));
@@ -589,6 +604,12 @@
             arrowCell = null;
         }
 
+
+
+
+
+
+
 //      +---------------------------+
 //      |      Pencil Handlers      |
 //      +---------------------------+
@@ -600,9 +621,9 @@
         }
 
         function pencilUpdateHighlights () {
-            // Remove highlight
-            document.querySelectorAll('[' + CELL_ATTR.TYPE + '=' + CELL_TYPE.PENCIL + ']').forEach((value, key, parent) => {
-                value.innerHTML = String(value.getAttribute(CELL_ATTR.VALUE));
+
+            document.querySelectorAll(`[${CELL_ATTR.TYPE}=${CELL_TYPE.PENCIL}]`).forEach((cell) => {
+                cell.innerText = cell.getAttribute(CELL_ATTR.VALUE);
             });
 
             // Update highlights
@@ -638,15 +659,15 @@
                         }
 
                         if (tempSpanLow.innerText != "") value.append(tempSpanLow);
-
-                        //cellValue = cellValue.replace(selectedValue, String('<div id="' + CELL_ATTR.PENCIL_HIGHLIGHT + '">' + selectedValue + '</div>'));
-                        console.log("Modified cell value = " + cellValue);
-                        //value.innerHTML = cellValue;
-                        console.log("New pencil value = " + value.innerText);
                     }
                 }
             });
         }
+
+
+
+
+
 
 //      +------------------------------+
 //      |      Attribute Handlers      |
@@ -654,20 +675,17 @@
 
         function removeAllAttributesFromAll () {
             for (let i = 0, j = cells.length; i < j; i++) {
-                removeAllAttributes(cells[i]);
+                cells[i].removeAttribute(CELL_ATTR.HIGHLIGHT);
+                cells[i].removeAttribute(CELL_ATTR.DIGIT_HIGHLIGHT);
+                cells[i].setAttribute(CELL_ATTR.TYPE, CELL_TYPE.EMPTY);
+                cells[i].removeAttribute(CELL_ATTR.ERROR);
             }
         }
 
-        function removeAllAttributes (cell) {
-            cell.removeAttribute(CELL_ATTR.HIGHLIGHT);
-            cell.removeAttribute(CELL_ATTR.DIGIT_HIGHLIGHT);
-            cell.setAttribute(CELL_ATTR.TYPE, CELL_TYPE.EMPTY);
-            cell.removeAttribute(CELL_ATTR.ERROR);
-        }
 
-        function removeAllAttributesFromAllCells () {
-            for (i = 0, j = cells.length; i < j; i++) removeAllAttributes(cells[i]);
-        }
+
+
+
 
 //      +-----------------------------+
 //      |      Cell Manipulation      |
@@ -807,6 +825,8 @@
             updateErrorHighlights();
 
             if (log) logAction(affectedCells, previousValues, newValues, previousTypes, newTypes);
+
+            if (playerInput) checkIfSolvedPuzzle();
         }
 
         function deleteDigit (playerInput=false, log=false) {
@@ -814,21 +834,43 @@
             setCellValue(cellsSelected.slice(0), 0, playerInput, log, CELL_TYPE.EMPTY);
         }
 
+
+
+
+//      +-------------------------------+
+//      |      Puzzle Solved Check      |
+//      +-------------------------------+
+
+        function checkIfSolvedPuzzle () {
+            for (let i = 0, j = cells.length; i < j; i++) {
+                let cellType = cells[i].getAttribute(CELL_ATTR.TYPE);
+                if (cellType == CELL_TYPE.PENCIL || cellType == CELL_TYPE.EMPTY) return;
+            }
+
+            if (document.querySelectorAll(`[${CELL_ATTR.ERROR}]`).length > 0) return;
+
+            clock.stop();
+
+            alert("You won!");
+        }
+
+
+
 //      +-----------------------+
 //      |      Grid Access      |
 //      +-----------------------+
 
         function getCellAt (x, y) {
-            return cells[y * 9 + x];
+            return cells[y * grid.width + x];
         }
 
         function getCellGroup (gIndex) {
-            let groupX = (gIndex%3)*3;
-            let groupY = Math.floor(gIndex/3)*3;
+            let groupX = (gIndex % grid.groupsX) * grid.groupWidth;
+            let groupY = Math.floor(gIndex / grid.groupsX) * grid.groupHeight;
             let result = [];
 
-            for (let x = 0; x < 3; x++) for (y = 0; y < 3; y++) {
-                result.push(cells[(groupY + y) * 9 + groupX + x]);
+            for (let x = 0, xl = grid.groupWidth; x < xl; x++) for (y = 0, yl = grid.groupHeight; y < yl; y++) {
+                result.push(cells[(groupY + y) * grid.width + groupX + x]);
             }
 
             return result;
@@ -836,15 +878,21 @@
 
         function getCellRow (yIndex) {
             let result = [];
-            for (let x = 0; x < grid.width; x++) result.push(cells[yIndex * grid.width + x]);
+            for (let x = 0, xl = grid.width; x < xl; x++) result.push(cells[yIndex * grid.width + x]);
             return result;
         }
 
         function getCellColumn (xIndex) {
             let result = [];
-            for (let y = 0; y < grid.height; y++) result.push(cells[y * grid.width + xIndex]);
+            for (let y = 0, yl = grid.height; y < yl; y++) result.push(cells[y * grid.width + xIndex]);
             return result;
         }
+
+
+
+
+
+
 
 //      +------------------------------+
 //      |      Highlight Handlers      |
@@ -868,12 +916,12 @@
 
             for (let x = 0, xl = grid.width; x < xl; x++) {
                 if (x == cellX) continue;
-                getCellAt(x, cellY).setAttribute(CELL_ATTR.HIGHLIGHT, "");
+                cells[cellY * grid.width + x].setAttribute(CELL_ATTR.HIGHLIGHT, "");
             }
 
             for (let y = 0, yl = grid.height; y < yl; y++) {
                 if (y == cellY) continue;
-                getCellAt(cellX, y).setAttribute(CELL_ATTR.HIGHLIGHT, "");
+                cells[y * grid.width + cellX].setAttribute(CELL_ATTR.HIGHLIGHT, "");
             }
 
             var groupX = Math.floor(cellX/grid.groupWidth) * grid.groupWidth;
@@ -882,7 +930,7 @@
             for (let x = 0, xl = grid.groupWidth; x < xl; x++) {
                 for (let y = 0, yl = grid.groupHeight; y < yl; y++) {
                     if (cellX == groupX + x && cellY == groupY + y) continue;
-                    getCellAt(groupX + x, groupY + y).setAttribute(CELL_ATTR.HIGHLIGHT, "");
+                    cells[(groupY + y) * grid.width + groupX + x].setAttribute(CELL_ATTR.HIGHLIGHT, "");
                 }
             }
 
@@ -900,6 +948,11 @@
             }
         }
 
+
+
+
+
+
 //      +------------------+
 //      |      Events      |
 //      +------------------+
@@ -911,20 +964,6 @@
                 if (after > 0 && numberButtons[after - 1].hasAttribute("data-sudoku-button-state")) return;
                 
                 selectionSetValue(after);
-                
-                /*
-                if (selected.multi.length > 1) {
-                    let cells = [];
-                    for (let i = 0; i < selected.multi.length; i++) {
-                        if (selected.multi[i].getAttribute(CELL_ATTR.TYPE) == CELL_TYPE.CLUE) continue;
-                        cells.push(selected.multi[i]);
-                    }
-                    setCellValue(cells, after, true, true);
-                } else if (selected.single != null && selected.single.getAttribute(CELL_ATTR.TYPE) != CELL_TYPE.CLUE) {
-                    setCellValue(selected.single, after, true, true);
-                    highlightCellsFor(selected.single);
-                }
-                */
             }
         });
 
@@ -967,12 +1006,16 @@
             else element["on" + eventName] = callback;
         }
 
+
+
+
+
+
 //      +--------------------------+
 //      |      Error Handlers      |
 //      +--------------------------+
 
         function updateErrorHighlights () {
-            //console.log("UPDATING ERRROOORRRRRR");
 
             document.querySelectorAll('[' + CELL_ATTR.ERROR + ']').forEach((value, key, parent) => { 
                 value.removeAttribute(CELL_ATTR.ERROR);
@@ -1021,7 +1064,8 @@
 
                 for (let x = 0, xl = grid.groupWidth; x < xl; x++) {
                     for (let y = 0, yl = grid.groupHeight; y < yl; y++) {
-                        let checkCell = getCellAt(groupX + x, groupY + y);
+                        //let checkCell = getCellAt(groupX + x, groupY + y);
+                        let checkCell = cells[(groupY + y) * grid.width + groupX + x];
                         if (!checkCell.hasAttribute(CELL_ATTR.ERROR)) checkCell.setAttribute(CELL_ATTR.ERROR, CELL_ERROR.CELL);
                     }
                 }
@@ -1031,7 +1075,8 @@
             for (let i = 0, j = rows.length; i < j; i++) {
                 let rowIndex = parseInt(rows[i]);
                 for (let x = 0, xl = grid.width; x < xl; x++) {
-                    let checkCell = getCellAt(x, rowIndex);
+                    //let checkCell = getCellAt(x, rowIndex);
+                    let checkCell = cells[rowIndex * grid.width + x];
                     if (!checkCell.hasAttribute(CELL_ATTR.ERROR)) checkCell.setAttribute(CELL_ATTR.ERROR, CELL_ERROR.CELL);
                 }
             }
@@ -1040,7 +1085,8 @@
             for (let i = 0, j = columns.length; i < j; i++) {
                 let columnIndex = parseInt(columns[i]);
                 for (let y = 0, yl = grid.height; y < yl; y++) {
-                    let checkCell = getCellAt(columnIndex, y);
+                    //let checkCell = getCellAt(columnIndex, y);
+                    let checkCell = cells[y * grid.width + columnIndex];
                     if (!checkCell.hasAttribute(CELL_ATTR.ERROR)) checkCell.setAttribute(CELL_ATTR.ERROR, CELL_ERROR.CELL);
                 }
             }
@@ -1053,20 +1099,24 @@
                 let errorNums = [];
                 document.querySelectorAll('[' + CELL_ATTR.VALUE + '="' + String(checkValue) + '"]').forEach((value, key, parent) => {
                     let tempGridIndex = value.getAttribute(CELL_ATTR.GROUP_INDEX);
-                    if (gridIndexes.indexOf(tempGridIndex) < 0) gridIndexes.push(tempGridIndex);
-                    if (value.hasAttribute("data-sudoku-cell-error") && value.getAttribute("data-sudoku-cell-error") == "digit") errorNums.push(value);
+                    if (value.getAttribute(CELL_ATTR.TYPE) != CELL_TYPE.PENCIL) {
+                        if (gridIndexes.indexOf(tempGridIndex) < 0) gridIndexes.push(tempGridIndex);
+                        if (value.hasAttribute("data-sudoku-cell-error") && value.getAttribute("data-sudoku-cell-error") == "digit") errorNums.push(value);
+                    }
                 });
                 if (gridIndexes.length > grid.groupsTotal-1 && errorNums.length == 0) {
                     document.querySelector('[data-button-value="' + String(checkValue) + '"]').setAttribute("data-sudoku-button-state", "disabled");
-                    //numberButtons[i-1].setAttribute("data-sudoku-button-state", "disabled");
-                //} else if (numberButtons[i-1] != null) {
                 } else {
                     let checkButton = document.querySelector('[data-button-value="' + String(checkValue) + '"]');
                     if (checkButton != null) checkButton.removeAttribute("data-sudoku-button-state");
-                    //numberButtons[i-1].removeAttribute("data-sudoku-button-state");
                 }
             }
         }
+
+
+
+
+
 
 //      +-------------------+
 //      |      History      |
@@ -1121,6 +1171,11 @@
             }
         }
 
+
+
+
+
+
 //      +------------------+
 //      |      Solver      |
 //      +------------------+
@@ -1130,17 +1185,6 @@
             let gridArray = []
             for (let i = 0, j = cells.length; i < j; i++) {
                 let cellStructure = {};
-                /*
-                {
-                    cell : cells[i],
-                    value : cells[i].getAttribute(CELL_ATTR.VALUE),
-                    possible : [],
-                    x : parseInt(cells[i].getAttribute(CELL_ATTR.POS_X)),
-                    y : parseInt(cells[i].getAttribute(CELL_ATTR.POS_Y)),
-                    groupIndex : parseInt(cells[i].getAttribute(CELL_ATTR.GROUP_INDEX)),
-                    type : cells[i].getAttribute(CELL_ATTR.TYPE)
-                };
-                */
                 cellStructure.cell = cells[i];
                 cellStructure.value = cells[i].getAttribute(CELL_ATTR.VALUE);
                 console.log(cellStructure.value);
@@ -1339,6 +1383,11 @@
             }
         }
 
+
+
+
+
+
 //      +---------------------+
 //      |      Generator      |
 //      +---------------------+
@@ -1515,6 +1564,12 @@
             return tempGrid;
         }
 
+
+
+
+
+
+
 //      +----------------------------+
 //      |      Puzzle Generator      |
 //      +----------------------------+
@@ -1557,6 +1612,12 @@
 
             initPuzzle(tempGrid);
         }
+
+
+
+
+
+
 
 //      +----------------------------+
 //      |      Backtrack Solver      |
@@ -1690,6 +1751,11 @@
             console.log("Solved grid with one solution...");
             return true;
         }
+
+
+
+
+
 
 //      +----------------------------+
 //      |      Logger Functions      |
