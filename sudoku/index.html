@@ -62,14 +62,15 @@
 //      +---------------------------+
 
         // Element Access
-        let root = null;
-        let container = null;
-        let table = null;
+        var elem = {
+            root : null, 
+            container : null, 
+            table : null,
+            cells : []
+        }
 
         // Cell handlers
         var cells = [];
-        var arrowCell = null;
-        var cellsSelected = [];
 
         const GRID_TYPE = {
             SMALL   : {emptyCellValue: 0, cellsTotal:  36, width:  6, height:  6, groupsTotal:  6, groupsX: 2, groupsY: 3, groupWidth: 3, groupHeight: 2, groupNum:  6, possibleValues: [1,2,3,4,5,6]},
@@ -121,11 +122,11 @@
             pause : () => {
                 if (isPaused) {
                     isPaused = false;
-                    table.removeAttribute("data-puzzle-paused");
+                    elem.table.removeAttribute("data-puzzle-paused");
                     document.getElementById("sudoku-button-pause-img").setAttribute("src", "./svg/pause_pause.svg");
                 } else {
                     isPaused = true;
-                    table.setAttribute("data-puzzle-paused", "");
+                    elem.table.setAttribute("data-puzzle-paused", "");
                     document.getElementById("sudoku-button-pause-img").setAttribute("src", "./svg/pause_continue.svg");
                 }
                 clockPause();
@@ -133,13 +134,13 @@
             reset : () => {
                 clockReset();
                 isPaused = false;
-                table.removeAttribute("data-puzzle-paused");
+                elem.table.removeAttribute("data-puzzle-paused");
                 document.getElementById("sudoku-button-pause-img").setAttribute("src", "./svg/pause_pause.svg");
             },
             stop : () => {
                 clockPause();
                 isPaused = true;
-                table.removeAttribute("data-puzzle-paused");
+                elem.table.removeAttribute("data-puzzle-paused");
                 document.getElementById("sudoku-button-pause-img").setAttribute("src", "./svg/pause_continue.svg");
             }
         }
@@ -230,6 +231,7 @@
             if (element == null) return;
 
             root = element;
+            elem.root = element;
 
             isTouch = detectMob();
 
@@ -240,14 +242,14 @@
             //document.head.querySelector('[href="./css/sudoku-fixed.css"]').setAttribute("href", "./css/sudoku-mobile.css");
 
             // Container
-            container = document.createElement("div");
-            container.setAttribute("id", "sudoku-root-container");
-            root.append(container);
+            elem.container = document.createElement("div");
+            elem.container.setAttribute("id", "sudoku-root-container");
+            elem.root.append(elem.container);
 
             // Top Container
             let topContainer = document.createElement("div");
             topContainer.setAttribute("id", "sudoku-root-top-container");
-            container.append(topContainer);
+            elem.container.append(topContainer);
 
             // Create logo
             let logo = document.createElement("span");
@@ -282,12 +284,12 @@
             buttonContainerGrid.append(createTempButton("Solve", "sudoku-button-redo", null, () => { solve(); }));
             buttonContainerGrid.append(createTempButton("Create Puzzle", "sudoku-button-create-puzzle", null, () => { createPuzzle(); }));
 
-            container.append(buttonContainerGrid);
+            elem.container.append(buttonContainerGrid);
 
             // Create Sudoku Table
-            table = document.createElement("table");
-            table.setAttribute("class", "unselectable");
-            table.setAttribute("id", "sudoku-root-table");
+            elem.table = document.createElement("table");
+            elem.table.setAttribute("class", "unselectable");
+            elem.table.setAttribute("id", "sudoku-root-table");
 
             for(let y = 0, yl = grid.height; y < yl; y++) {
                 var tableRow = document.createElement("tr");
@@ -310,26 +312,26 @@
                             selectCell(cell);
                             dragPrepare(cell);
                         });
-                    })(tableHeader, arrowRemove, selectCell, dragPrepare);
+                    })(tableHeader, arrow.remove, selection.set, dragPrepare);
 
                     if (!isTouch) {
                         (function(cell, selectionAdd){
                             cell.addEventListener("mouseover", (ev) => {
                                 ev.preventDefault();
                                 if (ev.buttons == 1 || ev.button == 1) {
-                                    selectionAdd(cell);
+                                    selectionAdd(cell, true);
                                 }
                             });
-                        })(tableHeader, selectionAdd);
+                        })(tableHeader, selection.set);
                     }
 
                     setCellValue(tableHeader, 0, false, false);
-                    cells.push(tableHeader);
+                    elem.cells.push(tableHeader);
                     tableRow.append(tableHeader);
                 }
-                table.append(tableRow);
+                elem.table.append(tableRow);
             }
-            container.append(table);
+            elem.container.append(elem.table);
 
             // Button container settings
             let buttonContainerInput = document.createElement("div");
@@ -341,7 +343,7 @@
             buttonContainerInput.append(createButtonInput("Pencil", "./svg/pen-off.svg", BUTTON_ATTR.TYPE_PENCIL, (button, e) => { pencilToggle(); }));
             buttonContainerInput.append(createButtonInput("Hint", "./svg/hint.svg", BUTTON_ATTR.TYPE_HINT, (button, e) => {}));
 
-            container.append(buttonContainerInput);
+            elem.container.append(buttonContainerInput);
 
             // Button container input
             let buttonContainerInputNumbers = document.createElement("div");
@@ -354,23 +356,23 @@
                 buttonNum.setAttribute("data-button-value", grid.possibleValues[i])
                 buttonNum.innerText = String(grid.possibleValues[i]);
                 buttonNum.addEventListener("click", (button, e) => {
-                    selectionSetValue(grid.possibleValues[i]);
+                    selection.setValue(grid.possibleValues[i]);
                 });
                 buttonContainerInputNumbers.append(buttonNum);
                 numberButtons.push(buttonNum);
             }
 
-            container.append(buttonContainerInputNumbers);
+            elem.container.append(buttonContainerInputNumbers);
 
             // Store pencil button
             pencil.button = document.querySelector('[' + BUTTON_ATTR.TYPE_PENCIL + ']');
             pencil.buttonImage = document.querySelector('[src="' + pencil.iconSource.off + '"]');
 
             if (!isTouch) {
-                document.addEventListener("mousedown", () => { if (!mouseOverRoot) selectionRemove(); });
+                document.addEventListener("mousedown", () => { if (!mouseOverRoot) selection.remove(); });
                 document.addEventListener("mouseup", () => { onMouseReleased(); });
             } else {
-                table.addEventListener("touchmove", (e) => {
+                elem.table.addEventListener("touchmove", (e) => {
                     e.preventDefault();
                     let elements = document.elementsFromPoint(e.touches.item(0).clientX, e.touches.item(0).clientY);
                     for (let i = 0, j = elements.length; i < j; i++) {
@@ -385,8 +387,8 @@
                 document.addEventListener("touchcancel", () => { onMouseReleased(); });
             }
 
-            container.addEventListener("mouseover", () => { mouseOverRoot = true; });
-            container.addEventListener("mouseout", () => { mouseOverRoot = false; });
+            elem.container.addEventListener("mouseover", () => { mouseOverRoot = true; });
+            elem.container.addEventListener("mouseout", () => { mouseOverRoot = false; });
         }
 
 
@@ -400,7 +402,7 @@
 
         function reset () {
             console.log("Resetting sudoku puzzle...");
-            selectionRemove();
+            selection.remove();
 
             pencilToggle(false);
 
@@ -409,12 +411,12 @@
                 value.removeAttribute("data-sudoku-button-state", "disabled");
             });
             clock.reset();
-            for (let x = 0, xl = cells.length; x < xl; x++) {
-                setCellValue(cells[x], 0, false, false, CELL_TYPE.EMPTY);
+            for (let x = 0, xl = elem.cells.length; x < xl; x++) {
+                setCellValue(elem.cells[x], 0, false, false, CELL_TYPE.EMPTY);
             }
             removeAllAttributesFromAll();
             logReset();
-            arrowRemove();
+            arrow.remove();
             console.log("Sudoku successfully reset!");
         }
 
@@ -423,22 +425,22 @@
             document.querySelector('[' + BUTTON_ATTR.TYPE_HINT + ']').removeAttribute(BUTTON_ATTR.STATE);
             while (cellTimeouts.length > 0) clearTimeout(cellTimeouts.splice(0,1)[0]);
 
-            cells.forEach((value, key, parent) => { value.removeAttribute("data-sudoku-cell-start-anim"); });
+            elem.cells.forEach((value, key, parent) => { value.removeAttribute("data-sudoku-cell-start-anim"); });
 
             let animOffset = 4;
             let animTotal = 4 * 81 + 400;
             cellTimeouts.push(
                 setTimeout(function () {
-                    cells.forEach((value, key, parent) => { value.removeAttribute("data-sudoku-cell-start-anim"); });
+                    elem.cells.forEach((value, key, parent) => { value.removeAttribute("data-sudoku-cell-start-anim"); });
                     clock.start();
                     console.log("Started clock...");
                 }, animTotal)
             );
-            for (let i = 0, j = cells.length; i < j; i++) {
+            for (let i = 0, j = elem.cells.length; i < j; i++) {
                 cellTimeouts.push(
                     setTimeout(function () {
-                        cells[i].setAttribute("data-sudoku-cell-start-anim", "");
-                        setCellValue(cells[i], puzzle[i], false, false, CELL_TYPE.CLUE);
+                        elem.cells[i].setAttribute("data-sudoku-cell-start-anim", "");
+                        setCellValue(elem.cells[i], puzzle[i], false, false, CELL_TYPE.CLUE);
                     }, i * animOffset)
                 );
             }
@@ -464,11 +466,28 @@
             if (!dragging && dragFirstCell != cell && dragFirstCell != null) {
                 dragging = true;
                 dragFirstCell = null;
-                selectionAdd(cell);
+                selection.set(cell, true);
             } else if (dragging) {
-                selectionAdd(cell);
+                selection.set(cell, true);
             }
         }
+
+
+
+
+
+
+
+//      +--------------------------+
+//      |       Drag Handlers      |
+//      +--------------------------+
+
+        function dragPrepare (cell) {
+            drag.firstCell = cell;
+            dragFirstCell = cell;
+        }
+
+
 
 
 
@@ -514,53 +533,56 @@
             return inputButton;
         }
 
+
+
+
+
+
 //      +------------------------------+
 //      |      Selection Handlers      |
 //      +------------------------------+
 
-        function selectionRemove () {
-            cellsSelected.forEach((cell) => { cell.removeAttribute(CELL_ATTR.SELECTED); });
-            cellsSelected = [];
-            removeHighlights();
-        }
+        var selection = function () {
+            var cells = [];
 
-        function selectionSetValue (value) {
-            setCellValue(cellsSelected.slice(0), value, true, true);
-        }
-
-        function selectCell (cell) {
-            selectionRemove();
-            cell.setAttribute(CELL_ATTR.SELECTED, CELL_SELECTED.SINGLE);
-            cellsSelected[0] = cell; 
-            highlightCellsFor(cell);
-            pencilUpdateHighlights();
-        }
-
-        function selectionAdd (cell) {
-            if (cellsSelected.length == 1) {
+            function remove () {
+                cells.forEach((cell) => { cell.removeAttribute(CELL_ATTR.SELECTED); });
+                cells = [];
                 removeHighlights();
-                cellsSelected[0].setAttribute(CELL_ATTR.SELECTED, CELL_SELECTED.MULTI);
             }
 
-            if (cellsSelected.indexOf(cell) >= 0) return;
-            cell.setAttribute(CELL_ATTR.SELECTED, CELL_SELECTED.MULTI);
-            cellsSelected.push(cell);
+            function set (cell, add=false) {
+                if (add) {
+                    if (cells.length == 1) {
+                        removeHighlights();
+                        cells[0].setAttribute(CELL_ATTR.SELECTED, CELL_SELECTED.MULTI);
+                    }
 
-            return;
-        }
+                    if (cells.indexOf(cell) >= 0) return;
+                    cell.setAttribute(CELL_ATTR.SELECTED, CELL_SELECTED.MULTI);
+                    cells.push(cell);
+                } else {
+                    remove();
+                    cell.setAttribute(CELL_ATTR.SELECTED, CELL_SELECTED.SINGLE);
+                    cells.push(cell);
+                    console.log(cells.length);
+                    highlightCellsFor(cell);
+                    pencilUpdateHighlights();
+                }
+            }
 
+            function setValue (value) {
+                setCellValue(cells.slice(0), value, true, true);
+            }
 
+            return {
+                cells:cells,
+                remove:remove,
+                setValue:setValue,
+                set:set
+            };
+        }();
 
-
-
-//      +--------------------------+
-//      |       Drag Handlers      |
-//      +--------------------------+
-
-        function dragPrepare (cell) {
-            drag.firstCell = cell;
-            dragFirstCell = cell;
-        }
 
 
 
@@ -571,38 +593,42 @@
 //      |      Arrow Handlers      |
 //      +--------------------------+
 
-        function arrowMove (cellsX=0, cellsY=0) {
-            let newX = 0;
-            let newY = 0;
-            if (cellsSelected.length == 0) {
-                newX = Math.floor(grid.width / 2);
-                newY = Math.floor(grid.height / 2);
-            } else {
-                if (arrowCell == null) arrowCell = cellsSelected[cellsSelected.length-1];
-                newX = parseInt(arrowCell.getAttribute(CELL_ATTR.POS_X));
-                newY = parseInt(arrowCell.getAttribute(CELL_ATTR.POS_Y));
-                if (cellsX != 0) newX = cellsX > 0 ? newX+1 : newX-1;
-                if (cellsY != 0) newY = cellsY > 0 ? newY+1 : newY-1;
+        var arrow = function () {
+            var cell = null;
+            function remove () {
+                if (cell == null) return;
+                cell.removeAttribute(CELL_ATTR.ARROW_HIGHLIGHT);
+                cell = null;
+            }
+            function move (x=0, y=0) {
+                var nx = 0;
+                var ny = 0;
+                if (selection.cells.length == 0 && cell == null) {
+                    nx = Math.floor(grid.width / 2);
+                    ny = Math.floor(grid.height / 2);
+                } else {
+                    if (cell == null) cell = selection.cells[selection.cells.length-1];
+                    nx = parseInt(cell.getAttribute(CELL_ATTR.POS_X));
+                    ny = parseInt(cell.getAttribute(CELL_ATTR.POS_Y));    
+                    if (x != 0) nx += x > 0 ? 1 : -1;
+                    if (y != 0) ny += y > 0 ? 1 : -1;
+                }
+
+                if (nx > grid.width-1) nx = 0;
+                if (nx < 0) nx = grid.width-1;
+                if (ny > grid.height-1) ny = 0;
+                if (ny < 0) ny = grid.height-1;
+                
+                arrow.remove();
+                cell = elem.cells[ny * grid.width + nx];
+                cell.setAttribute(CELL_ATTR.ARROW_HIGHLIGHT, "");
+
+                if (selection.cells.length >= 0 && KEY_DOWN.SHIFT) selection.set(cell, true);
+                else selection.set(cell);
             }
 
-            if (newX > grid.width-1) newX = 0;
-            if (newX < 0) newX = grid.width-1;
-            if (newY > grid.height-1) newY = 0;
-            if (newY < 0) newY = grid.height-1;
-            
-            arrowRemove();
-            arrowCell = getCellAt(newX, newY);
-            arrowCell.setAttribute(CELL_ATTR.ARROW_HIGHLIGHT, "");
-
-            if (cellsSelected.length > 0 && KEY_DOWN.SHIFT) selectionAdd(arrowCell);
-            else selectCell(arrowCell);
-        }
-
-        function arrowRemove () {
-            if (arrowCell == null) return;
-            arrowCell.removeAttribute(CELL_ATTR.ARROW_HIGHLIGHT);
-            arrowCell = null;
-        }
+            return {cell:cell, move:move, remove:remove};
+        }();
 
 
 
@@ -627,12 +653,14 @@
             });
 
             // Update highlights
-            if (cellsSelected.length == 1 && (cellsSelected[0].getAttribute(CELL_ATTR.TYPE) != CELL_TYPE.NORMAL && cellsSelected[0].getAttribute(CELL_ATTR.TYPE) != CELL_TYPE.CLUE)) return;
+            if (selection.cells.length == 1 && (selection.cells[0].getAttribute(CELL_ATTR.TYPE) != CELL_TYPE.NORMAL && selection.cells[0].getAttribute(CELL_ATTR.TYPE) != CELL_TYPE.CLUE)) return;
+            if (selection.cells[0] == undefined) return;
             document.querySelectorAll('[' + CELL_ATTR.TYPE + ']').forEach((value, ket, parent) => {
                 console.log("Checking pencil cell...");
                 if (value.getAttribute(CELL_ATTR.TYPE) == CELL_TYPE.PENCIL) {
                     let cellValue = "" + String(value.getAttribute(CELL_ATTR.VALUE));
-                    let selectedValue = "" + String(cellsSelected[0].getAttribute(CELL_ATTR.VALUE));
+                    console.log(selection.cells[0]);
+                    let selectedValue = "" + String(selection.cells[0].getAttribute(CELL_ATTR.VALUE));
                     if (cellValue.indexOf(selectedValue) >= 0) {
                         console.log("Cell has selected value!!");
                         console.log("Found value " + selectedValue + " inside " + cellValue);
@@ -674,11 +702,11 @@
 //      +------------------------------+
 
         function removeAllAttributesFromAll () {
-            for (let i = 0, j = cells.length; i < j; i++) {
-                cells[i].removeAttribute(CELL_ATTR.HIGHLIGHT);
-                cells[i].removeAttribute(CELL_ATTR.DIGIT_HIGHLIGHT);
-                cells[i].setAttribute(CELL_ATTR.TYPE, CELL_TYPE.EMPTY);
-                cells[i].removeAttribute(CELL_ATTR.ERROR);
+            for (let i = 0, j = elem.cells.length; i < j; i++) {
+                elem.cells[i].removeAttribute(CELL_ATTR.HIGHLIGHT);
+                elem.cells[i].removeAttribute(CELL_ATTR.DIGIT_HIGHLIGHT);
+                elem.cells[i].setAttribute(CELL_ATTR.TYPE, CELL_TYPE.EMPTY);
+                elem.cells[i].removeAttribute(CELL_ATTR.ERROR);
             }
         }
 
@@ -817,9 +845,9 @@
                 }
             }
 
-            if (cellsSelected.length == 1) {
-                highlightCellsFor(cellsSelected[0]);
-                if (cellsSelected[0].getAttribute(CELL_ATTR.TYPE) == CELL_TYPE.NORMAL) pencilUpdateHighlights();
+            if (selection.cells.length == 1) {
+                highlightCellsFor(selection.cells[0]);
+                if (selection.cells[0].getAttribute(CELL_ATTR.TYPE) == CELL_TYPE.NORMAL) pencilUpdateHighlights();
             }
 
             updateErrorHighlights();
@@ -830,8 +858,8 @@
         }
 
         function deleteDigit (playerInput=false, log=false) {
-            if (cellsSelected.length == 0) return;
-            setCellValue(cellsSelected.slice(0), 0, playerInput, log, CELL_TYPE.EMPTY);
+            if (selection.cells.length == 0) return;
+            setCellValue(selection.cells.slice(0), 0, playerInput, log, CELL_TYPE.EMPTY);
         }
 
 
@@ -842,8 +870,8 @@
 //      +-------------------------------+
 
         function checkIfSolvedPuzzle () {
-            for (let i = 0, j = cells.length; i < j; i++) {
-                let cellType = cells[i].getAttribute(CELL_ATTR.TYPE);
+            for (let i = 0, j = elem.cells.length; i < j; i++) {
+                let cellType = elem.cells[i].getAttribute(CELL_ATTR.TYPE);
                 if (cellType == CELL_TYPE.PENCIL || cellType == CELL_TYPE.EMPTY) return;
             }
 
@@ -861,7 +889,7 @@
 //      +-----------------------+
 
         function getCellAt (x, y) {
-            return cells[y * grid.width + x];
+            return elem.cells[y * grid.width + x];
         }
 
         function getCellGroup (gIndex) {
@@ -870,7 +898,7 @@
             let result = [];
 
             for (let x = 0, xl = grid.groupWidth; x < xl; x++) for (y = 0, yl = grid.groupHeight; y < yl; y++) {
-                result.push(cells[(groupY + y) * grid.width + groupX + x]);
+                result.push(elem.cells[(groupY + y) * grid.width + groupX + x]);
             }
 
             return result;
@@ -878,13 +906,13 @@
 
         function getCellRow (yIndex) {
             let result = [];
-            for (let x = 0, xl = grid.width; x < xl; x++) result.push(cells[yIndex * grid.width + x]);
+            for (let x = 0, xl = grid.width; x < xl; x++) result.push(elem.cells[yIndex * grid.width + x]);
             return result;
         }
 
         function getCellColumn (xIndex) {
             let result = [];
-            for (let y = 0, yl = grid.height; y < yl; y++) result.push(cells[y * grid.width + xIndex]);
+            for (let y = 0, yl = grid.height; y < yl; y++) result.push(elem.cells[y * grid.width + xIndex]);
             return result;
         }
 
@@ -899,9 +927,9 @@
 //      +------------------------------+
 
         function removeHighlights () {
-            for (let i = 0, j = cells.length; i < j; i++) {
-                cells[i].removeAttribute(CELL_ATTR.HIGHLIGHT);
-                cells[i].removeAttribute(CELL_ATTR.DIGIT_HIGHLIGHT);
+            for (let i = 0, j = elem.cells.length; i < j; i++) {
+                elem.cells[i].removeAttribute(CELL_ATTR.HIGHLIGHT);
+                elem.cells[i].removeAttribute(CELL_ATTR.DIGIT_HIGHLIGHT);
             }
         }
 
@@ -916,12 +944,12 @@
 
             for (let x = 0, xl = grid.width; x < xl; x++) {
                 if (x == cellX) continue;
-                cells[cellY * grid.width + x].setAttribute(CELL_ATTR.HIGHLIGHT, "");
+                elem.cells[cellY * grid.width + x].setAttribute(CELL_ATTR.HIGHLIGHT, "");
             }
 
             for (let y = 0, yl = grid.height; y < yl; y++) {
                 if (y == cellY) continue;
-                cells[y * grid.width + cellX].setAttribute(CELL_ATTR.HIGHLIGHT, "");
+                elem.cells[y * grid.width + cellX].setAttribute(CELL_ATTR.HIGHLIGHT, "");
             }
 
             var groupX = Math.floor(cellX/grid.groupWidth) * grid.groupWidth;
@@ -930,15 +958,15 @@
             for (let x = 0, xl = grid.groupWidth; x < xl; x++) {
                 for (let y = 0, yl = grid.groupHeight; y < yl; y++) {
                     if (cellX == groupX + x && cellY == groupY + y) continue;
-                    cells[(groupY + y) * grid.width + groupX + x].setAttribute(CELL_ATTR.HIGHLIGHT, "");
+                    elem.cells[(groupY + y) * grid.width + groupX + x].setAttribute(CELL_ATTR.HIGHLIGHT, "");
                 }
             }
 
             // Highlight digits
             if (cell.getAttribute(CELL_ATTR.VALUE) != 0 && cell.getAttribute(CELL_ATTR.TYPE) != CELL_TYPE.PENCIL) {
                 let value = cell.getAttribute(CELL_ATTR.VALUE);
-                for (let i = 0, j = cells.length; i < j; i++) {
-                    let tempCell = cells[i];
+                for (let i = 0, j = elem.cells.length; i < j; i++) {
+                    let tempCell = elem.cells[i];
                     if (tempCell == cell) continue;
                     if (tempCell.getAttribute(CELL_ATTR.TYPE) == CELL_TYPE.PENCIL) continue;
                     if (tempCell.getAttribute(CELL_ATTR.VALUE) == value) {
@@ -963,7 +991,7 @@
                 let after = e.keyCode - 48;
                 if (after > 0 && numberButtons[after - 1].hasAttribute("data-sudoku-button-state")) return;
                 
-                selectionSetValue(after);
+                selection.setValue(after);
             }
         });
 
@@ -982,10 +1010,10 @@
                 default:
             }
             switch (e.keyCode) {
-                case 37: arrowMove(-1, 0); break;
-                case 38: arrowMove(0, -1); break;
-                case 39: arrowMove(1, 0); break;
-                case 40: arrowMove(0, 1); break;
+                case 37: arrow.move(-1, 0); break;
+                case 38: arrow.move(0, -1); break;
+                case 39: arrow.move(1, 0); break;
+                case 40: arrow.move(0, 1); break;
                 default:
             }
         });
@@ -1065,7 +1093,7 @@
                 for (let x = 0, xl = grid.groupWidth; x < xl; x++) {
                     for (let y = 0, yl = grid.groupHeight; y < yl; y++) {
                         //let checkCell = getCellAt(groupX + x, groupY + y);
-                        let checkCell = cells[(groupY + y) * grid.width + groupX + x];
+                        let checkCell = elem.cells[(groupY + y) * grid.width + groupX + x];
                         if (!checkCell.hasAttribute(CELL_ATTR.ERROR)) checkCell.setAttribute(CELL_ATTR.ERROR, CELL_ERROR.CELL);
                     }
                 }
@@ -1076,7 +1104,7 @@
                 let rowIndex = parseInt(rows[i]);
                 for (let x = 0, xl = grid.width; x < xl; x++) {
                     //let checkCell = getCellAt(x, rowIndex);
-                    let checkCell = cells[rowIndex * grid.width + x];
+                    let checkCell = elem.cells[rowIndex * grid.width + x];
                     if (!checkCell.hasAttribute(CELL_ATTR.ERROR)) checkCell.setAttribute(CELL_ATTR.ERROR, CELL_ERROR.CELL);
                 }
             }
@@ -1086,7 +1114,7 @@
                 let columnIndex = parseInt(columns[i]);
                 for (let y = 0, yl = grid.height; y < yl; y++) {
                     //let checkCell = getCellAt(columnIndex, y);
-                    let checkCell = cells[y * grid.width + columnIndex];
+                    let checkCell = elem.cells[y * grid.width + columnIndex];
                     if (!checkCell.hasAttribute(CELL_ATTR.ERROR)) checkCell.setAttribute(CELL_ATTR.ERROR, CELL_ERROR.CELL);
                 }
             }
@@ -1183,16 +1211,16 @@
         function solve () {
             // Construct solve grid structure
             let gridArray = []
-            for (let i = 0, j = cells.length; i < j; i++) {
+            for (let i = 0, j = elem.cells.length; i < j; i++) {
                 let cellStructure = {};
-                cellStructure.cell = cells[i];
-                cellStructure.value = cells[i].getAttribute(CELL_ATTR.VALUE);
+                cellStructure.cell = elem.cells[i];
+                cellStructure.value = elem.cells[i].getAttribute(CELL_ATTR.VALUE);
                 console.log(cellStructure.value);
                 cellStructure.possible = [];
-                cellStructure.x = parseInt(cells[i].getAttribute(CELL_ATTR.POS_X));
-                cellStructure.y = parseInt(cells[i].getAttribute(CELL_ATTR.POS_Y));
-                cellStructure.groupIndex = parseInt(cells[i].getAttribute(CELL_ATTR.GROUP_INDEX));
-                cellStructure.type = cells[i].getAttribute(CELL_ATTR.TYPE);
+                cellStructure.x = parseInt(elem.cells[i].getAttribute(CELL_ATTR.POS_X));
+                cellStructure.y = parseInt(elem.cells[i].getAttribute(CELL_ATTR.POS_Y));
+                cellStructure.groupIndex = parseInt(elem.cells[i].getAttribute(CELL_ATTR.GROUP_INDEX));
+                cellStructure.type = elem.cells[i].getAttribute(CELL_ATTR.TYPE);
                 gridArray.push(cellStructure);
             }
 

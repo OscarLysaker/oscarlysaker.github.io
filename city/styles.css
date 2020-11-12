@@ -1,0 +1,11 @@
+html, body {
+    margin: 0;
+    overflow: hidden;
+}
+
+#game-canvas {
+    margin: 0;
+    padding: 0;
+    margin-left: 40px;
+    margin-top: 2em;
+}

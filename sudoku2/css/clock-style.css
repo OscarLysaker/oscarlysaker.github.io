@@ -1,0 +1,76 @@
+:root {
+    --font-open-sans: 'Open Sans', sans-serif;
+
+    --clock-font-size: 18px;
+    --clock-change-time: 0.7s;
+    --clock-digit-height: calc(var(--clock-font-size) * 1.2);
+    --clock-root-height: calc(var(--clock-digit-height));
+    --clock-digit-width: calc(var(--clock-font-size) * 0.6);
+    --clock-spacer-width: calc(var(--clock-font-size) * 0.3);
+    --clock-digit-margin: calc(var(--clock-digit-height) * 0.1);
+    --clock-width: calc(var(--clock-digit-margin) * 7 + var(--clock-digit-width) * 6 + var(--clock-spacer-width) * 2);
+}
+
+[data-clock-root-container] {
+    position: relative;
+    float:right;
+}
+
+[data-clock-root-container] #clock-root-digits {
+    font-family: var(--font-open-sans);
+    font-size: var(--clock-font-size);
+    height: calc(var(--clock-root-height) * 1.2);
+    font-weight: 600;
+    width:fit-content;
+    overflow: hidden;
+    margin: none;
+    padding: none;
+    padding-top: -10px;
+    background-color: white;
+    margin-block-start: 0;
+    text-align: center;
+}
+[data-clock-root-container] #clock-root-digits span {
+    float: left;
+    margin-left: var(--clock-digit-margin);
+    width: var(--clock-digit-width);
+}
+[data-clock-root-container] #clock-root-digits #clock-hours-tens { margin-left: 0; }
+
+[data-clock-root-container] #clock-root-digits span.clock-digit-spacer {
+    position: relative;
+    bottom: calc(var(--clock-digit-height) * 0.05);
+    opacity: 0.5;
+    width: var(--clock-spacer-width);
+}
+
+[data-clock-root-container] #clock-root-digits span.clock-digits {
+    position: relative;
+    transition: top var(--clock-change-time) ease-out;
+    transition-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
+    top: 0;
+    opacity: 0.8;
+}
+
+[data-clock-root-container] #clock-root-digits span.clock-digits div {
+    height: var(--clock-digit-height);
+}
+
+[data-clock-root-container] #clock-root-digits span[data-digit-position="0"] { top: calc(var(--clock-digit-height) * 0); }
+[data-clock-root-container] #clock-root-digits span[data-digit-position="1"] { top: calc(var(--clock-digit-height) * -1); }
+[data-clock-root-container] #clock-root-digits span[data-digit-position="2"] { top: calc(var(--clock-digit-height) * -2); }
+[data-clock-root-container] #clock-root-digits span[data-digit-position="3"] { top: calc(var(--clock-digit-height) * -3); }
+[data-clock-root-container] #clock-root-digits span[data-digit-position="4"] { top: calc(var(--clock-digit-height) * -4); }
+[data-clock-root-container] #clock-root-digits span[data-digit-position="5"] { top: calc(var(--clock-digit-height) * -5); }
+[data-clock-root-container] #clock-root-digits span[data-digit-position="6"] { top: calc(var(--clock-digit-height) * -6); }
+[data-clock-root-container] #clock-root-digits span[data-digit-position="7"] { top: calc(var(--clock-digit-height) * -7); }
+[data-clock-root-container] #clock-root-digits span[data-digit-position="8"] { top: calc(var(--clock-digit-height) * -8); }
+[data-clock-root-container] #clock-root-digits span[data-digit-position="9"] { top: calc(var(--clock-digit-height) * -9); }
+
+[data-clock-root-container] .fade {
+    position:absolute;
+    top: 0;
+    height: calc(var(--clock-root-height) * 1.2);
+    width: var(--clock-width);
+    background-image:linear-gradient(180deg, white 0%, rgba(255, 255, 255, 0) 20%,  rgba(255, 255, 255, 0) 70%, white 100%);
+}

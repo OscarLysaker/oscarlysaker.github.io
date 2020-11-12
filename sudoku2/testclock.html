@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, user-scalable=no">
+    <title>Timer Test</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,600;0,700;0,800;1,300;1,400;1,600;1,700;1,800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --font-open-sans: 'Open Sans', sans-serif;
+
+            --clock-font-size: 32px;
+            --clock-change-time: 0.7s;
+            --clock-digit-height: calc(var(--clock-font-size) * 1.2);
+            --clock-root-height: calc(var(--clock-digit-height));
+        }
+
+        [data-clock-root-container] {
+            position: relative;
+        }
+
+        [data-clock-root-container] #clock-root-digits {
+            font-family: var(--font-open-sans);
+            font-size: var(--clock-font-size);
+            height: calc(var(--clock-root-height) * 1.2);
+            font-weight: 600;
+            width:fit-content;
+            overflow: hidden;
+            margin: none;
+            padding: none;
+            padding-top: -10px;
+            background-color: red;
+            margin-block-start: 0;
+        }
+        [data-clock-root-container] #clock-root-digits span {
+            float: left;
+            margin-left: calc(var(--clock-digit-height) * 0.2);
+        }
+        [data-clock-root-container] #clock-root-main #clock-hours-tens { margin-left: 0; }
+
+        [data-clock-root-container] #clock-root-digits span.clock-digit-spacer {
+            position: relative;
+            bottom: calc(var(--clock-digit-height) * 0.05);
+            opacity: 0.5;
+        }
+
+        [data-clock-root-container] #clock-root-digits span.clock-digits {
+            position: relative;
+            transition: top var(--clock-change-time) ease-out;
+            transition-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
+            top: 0;
+            opacity: 0.8;
+        }
+
+        [data-clock-root-container] #clock-root-digits span.clock-digits div {
+            height: var(--clock-digit-height);
+        }
+
+        [data-clock-root-container] #clock-root-digits span[data-digit-position="0"] { top: calc(var(--clock-digit-height) * 0); }
+        [data-clock-root-container] #clock-root-digits span[data-digit-position="1"] { top: calc(var(--clock-digit-height) * -1); }
+        [data-clock-root-container] #clock-root-digits span[data-digit-position="2"] { top: calc(var(--clock-digit-height) * -2); }
+        [data-clock-root-container] #clock-root-digits span[data-digit-position="3"] { top: calc(var(--clock-digit-height) * -3); }
+        [data-clock-root-container] #clock-root-digits span[data-digit-position="4"] { top: calc(var(--clock-digit-height) * -4); }
+        [data-clock-root-container] #clock-root-digits span[data-digit-position="5"] { top: calc(var(--clock-digit-height) * -5); }
+        [data-clock-root-container] #clock-root-digits span[data-digit-position="6"] { top: calc(var(--clock-digit-height) * -6); }
+        [data-clock-root-container] #clock-root-digits span[data-digit-position="7"] { top: calc(var(--clock-digit-height) * -7); }
+        [data-clock-root-container] #clock-root-digits span[data-digit-position="8"] { top: calc(var(--clock-digit-height) * -8); }
+        [data-clock-root-container] #clock-root-digits span[data-digit-position="9"] { top: calc(var(--clock-digit-height) * -9); }
+
+        .fade {
+            position:absolute;
+            top: 0;
+            height: calc(var(--clock-root-height) * 1.2);
+            width: 100%;
+            background-image:linear-gradient(180deg, white 0%, rgba(255, 255, 255, 0) 20%,  rgba(255, 255, 255, 0) 70%, white 100%);
+        }
+    </style>
+</head>
+<body>
+    <div id="clock-root-main"></div>
+
+    <script>
+        let clockRoot = null, clockRootDigits = null;
+        let clockDigitSpans = [];
+        let clockTime = [0,0, 0,0, 0,0];
+        let clockElapsed = null;
+        let clockTimeout = null;
+        let clockPaused = false;
+        let clockOffsetPaused = 0;
+        let clockLastTimeStamp = 0;
+
+        function clockInit (root=null, showButtons=false) {
+            if (root == null) return;
+
+            clockRoot = root;
+            clockRoot.setAttribute("data-clock-root-container", "");
+            
+            clockRootDigits = document.createElement("div");
+            clockRootDigits.setAttribute("id", "clock-root-digits");
+            clockRoot.append(clockRootDigits);
+
+            clockDigitSpans.push(getDigitSpan("clock-hours-tens"));
+            clockDigitSpans.push(getDigitSpan("clock-hours-ones"));
+            addDigitSpacer(clockRootDigits);
+            clockDigitSpans.push(getDigitSpan("clock-minutes-tens"));
+            clockDigitSpans.push(getDigitSpan("clock-minutes-ones"));
+            addDigitSpacer(clockRootDigits);
+            clockDigitSpans.push(getDigitSpan("clock-seconds-tens"));
+            clockDigitSpans.push(getDigitSpan("clock-seconds-ones"));
+
+            function getDigitSpan (id) {
+                let clockSpan = document.createElement("span");
+                clockSpan.setAttribute("class", "clock-digits");
+                clockSpan.setAttribute("id", id);
+                clockSpan.setAttribute("data-digit-position", "0");
+                for (let i = 0; i < 10; i++) {
+                    let divObj = document.createElement("div");
+                    divObj.innerText = i;
+                    clockSpan.append(divObj);
+                }
+                clockRootDigits.append(clockSpan);
+                return clockSpan;
+            }
+
+            function addDigitSpacer (root) {
+                let newSpacer = document.createElement("span");
+                newSpacer.setAttribute("class", "clock-digit-spacer");
+                newSpacer.innerText = ":";
+                root.append(newSpacer);
+            }
+
+            let tempFader = document.createElement("div");
+            tempFader.setAttribute("class", "fade");
+            clockRoot.append(tempFader);
+
+            // Buttons
+            if (showButtons) {
+                createControlButton("Start", "clock-button-start", () => { clockStart(); });
+                createControlButton("Pause", "clock-button-pause", () => { clockPause(); });
+                createControlButton("Reset", "clock-button-reset", () => { clockReset(); });
+
+                function createControlButton (label, id, callBack) {
+                    let tempButton = document.createElement("button");
+                    tempButton.setAttribute("id", id);
+                    tempButton.innerText = label;
+                    tempButton.onclick = () => { callBack(); };
+                    root.append(tempButton);
+                }
+            }
+
+            clockReset();
+        }
+
+        function clockStart () {
+            console.log("asdasd");
+
+            if (clockElapsed != null) return;
+
+            // If paused or reset, restart it
+            if (clockPaused) clockPause();
+            else {
+                clockLastTimeStamp = Date.now();
+                clockElapsed = setInterval(function () { clockTick(); }, 1000);
+            }
+        }
+
+        function clockPause () {
+            // If not running and not paused, return
+            if (!clockPaused && clockElapsed == null) return;
+
+            // Unpause timer
+            if (clockPaused && clockElapsed == null) {
+                clockPaused = false;
+                clockLastTimeStamp = Date.now();
+                console.log("Timer started with offset: " + clockOffsetPaused);
+                setTimeout(() => {
+                    clearTimeout(clockTimeout);
+                    clockTimeout = null;
+                    clockOffsetPaused = 0;
+                    clockTick();
+                    clockElapsed = setInterval(function () { clockTick(); }, 1000);
+                }, clockOffsetPaused);
+                return;
+            }
+
+            // Pause timer
+            clearInterval(clockElapsed);
+            clockElapsed = null;
+            clockPaused = true;
+            if (clockTimeout != null) {
+                clearTimeout(clockTimeout);
+                clockTimeout = null;
+                clockOffsetPaused -= (Date.now() - clockLastTimeStamp);
+                if (clockOffsetPaused < 0) clockOffsetPaused = 0;
+            } else {
+                clockOffsetPaused = 1000 - (Date.now() - clockLastTimeStamp);
+            }
+        }
+
+
+        function clockReset () {
+            if (clockElapsed == null) return;
+            clearTimeout(clockTimeout);
+            clockTimeout = null;
+            clearInterval(clockElapsed);
+            clockElapsed = null;
+            clockPaused = false;
+            clockTime = [0,0, 0,0, 0,0]
+            clockLastTimeStamp = 0;
+            clockOffsetPaused = 0;
+            clockDigitSpans.forEach((value, key, parent) => { value.setAttribute("data-digit-position", 0); });
+        }
+
+        function clockTick () {
+            console.log("tick tock");
+            clockLastTimeStamp = Date.now();
+            if (clockTime[5] == 9) { clockTime[5] = 0;
+                if (clockTime[4] == 5) { clockTime[4] = 0;
+                    if (clockTime[3] == 9) { clockTime[3] = 0;
+                        if (clockTime[2] == 5) { clockTime[2] = 0;
+                            if (clockTime[1] == 9) { clockTime[1] = 0;
+                                if (clockTime[0] == 9) clockTime = [0,0, 0,0, 0,0];
+                                else clockTime[0]++;
+                            } else clockTime[1]++;
+                        } else clockTime[2]++;
+                    } else clockTime[3]++;
+                } else clockTime[4]++;
+            } else clockTime[5]++;
+
+            for (let i = 0; i < clockDigitSpans.length; i++) {
+                clockDigitSpans[i].setAttribute("data-digit-position", String(clockTime[i]));
+            }
+        }
+
+        function clockGetTime () { return {hours: clockTime[0] * 10 + clockTime[1], minutes: clockTime[2] * 10 + clockTime[3], seconds: clockTime[4] * 10 + clockTime[5]}; }
+    </script>
+
+    <script>
+        clockInit(document.getElementById("clock-root-main"), true);
+    </script>
+</body>
+</html>
