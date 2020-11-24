@@ -1561,6 +1561,9 @@ var sudoku = function () {
                     e.preventDefault();
                     onOverCell(cell);
                 });
+                cell.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                });
             })(td, input.onPointerDown, input.onOverCell);
     
             parentRow.append(td);
