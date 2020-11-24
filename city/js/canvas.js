@@ -118,6 +118,7 @@ var sprite = function () {
         Sprite.call(this, TYPE.PATH, color, z, layer);
         this.relX = 0;
         this.relY = 0;
+        this.lineWidth = 1;
         this.points = [];
         this.lineTo = (x, y) => {
             this.points.push(new components.PathPoint(x, y));
@@ -229,7 +230,27 @@ var render = function () {
     //###################//
 
     var drawTimer = new Timer(onDraw, 1);
+    var trackFramerate = true;
+    var lastFramerate = 0;
+    var framesCounter = 0;
+    var timeCounter = 0;
+    var previousTime = Date.now();
     function onDraw () {
+
+        // Framerate
+        if (trackFramerate) {
+            var currentTime = Date.now();
+            timeCounter += currentTime - previousTime;
+            previousTime = currentTime;
+            if (timeCounter > 1000) {
+                //console.log(`Framerate: ${framesCounter}fps`);
+                lastFramerate = framesCounter;
+                timeCounter-=1000;
+                framesCounter=0;
+            }
+            framesCounter++;
+        }
+
         var w = canvasWidth;
         var h = canvasHeight;
 
@@ -237,21 +258,34 @@ var render = function () {
         ctx.fillRect(0, 0, stage.width, stage.height);
 
         // Draw objects
+        ObjectLoop:
         for (var i=0, j=objects.length; i<j; i++) {
             var obj = objects[i];
             switch (obj.type) {
                 case sprite.TYPE.PARTICLES:
                     ctx.fillStyle = obj.color;
                     var pSize = obj.sizeInt;
+                    var part = null;
                     for (var pi=0, pj=obj.all.length; pi<pj; pi++) {
-                        var part = obj.all[pi];
-                        if (part.x < -pSize || part.x > w || part.y < -pSize || part.y > h) continue;
+                        part = obj.all[pi];
+                        if (part.xInt < -pSize || part.xInt > w || part.yInt < -pSize || part.yInt > h) continue;
                         ctx.fillRect(part.xInt, part.yInt, pSize, pSize);
                     }
                     break;
                 case sprite.TYPE.RECT:
+                    if (obj.xInt + obj.widthInt < offset.x*-1 || obj.xInt > offset.x*-1+w || obj.yInt + obj.heightInt < offset.y * -1 || obj.yInt > offset.y*-1+h) continue ObjectLoop;
                     ctx.fillStyle = obj.color;
                     ctx.fillRect(obj.xInt, obj.yInt, obj.widthInt, obj.heightInt);
+                    break;
+                case sprite.TYPE.PATH:
+                    ctx.strokeStyle = obj.color;
+                    ctx.lineWidth = obj.lineWidth;
+                    ctx.beginPath();
+                    for (var i=0, j=obj.points.length; i<j; i++) {
+                        if (obj.points[i].line && i > 0) ctx.lineTo(obj.points[i].x, obj.points[i].y);
+                        else ctx.moveTo(obj.points[i].x, obj.points[i].y);
+                    }
+                    ctx.stroke();
                     break;
                 default:
             }
@@ -260,8 +294,9 @@ var render = function () {
         // Draw planeOffset
         ctx.fillStyle = "#ffffff";
         ctx.textAlign = "left";
-        ctx.font = `20px Arial`;
-        ctx.fillText(`Plane offset (x:${offset.x}, y:${offset.y})`, 6, 20);
+        ctx.font = `12px Arial`;
+        ctx.fillText(`Framerate: ${lastFramerate}fps`, 6, 20);
+        ctx.fillText(`Plane offset (x:${offset.x}, y:${offset.y})`, 6, 40);
     }
 
     return {

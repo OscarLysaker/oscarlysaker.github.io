@@ -1,26 +1,27 @@
 :root {
     --font-open-sans: 'Open Sans', sans-serif;
 
-    --font-weight-digit-pencil: 400;
     --font-weight-digit-clue: 500;
     --font-weight-digit-input: 300;
     --font-weight-digit-highlight: 600;
     --font-weight-digit-error: 600;
 
-    --grid-size: 98vmin;
-    --cell-size: calc(var(--grid-size)/9);
+    --grid-size-default: 600px;
+    --grid-size-portrait: 98vmin;
+    --grid-size-landscape: 80vmin;
 
-    --digit-size-grid: calc(var(--grid-size)*0.06);
-    --digit-size-pencil: calc(var(--grid-size)*0.03);
+    --cell-size-default: calc(var(--grid-size-default)/9);
+    --cell-size-portrait: calc(98vmin/9);
+    --cell-size-landscape: calc(80vmin/9);
 
-    --top-bar-logo-font-size: calc(var(--grid-size)*0.07);
-    --top-bar-button-font-size: calc(var(--grid-size)*0.03);
+    --digit-size-grid-default: calc(var(--grid-size-default)*0.06);
+    --digit-size-pencil-default: calc(var(--grid-size-default)*0.02);
+
+    --top-bar-logo-font-size: 32px;
     --top-bar-block-start: calc(var(--top-bar-logo-font-size) * 1.0);
     --top-bar-block-stop: calc(var(--top-bar-logo-font-size) * 0.2);
     --top-bar-height: calc(var(--top-bar-logo-font-size) * 1.2);
     --top-bar-height-full: calc(var(--top-bar-height) + var(--top-bar-block-stop) + var(--top-bar-block-start));
-
-    --clock-font-size: calc(var(--grid-size)*0.05);
 
     --color-00: white;
     --color-01: black;
@@ -142,8 +143,8 @@ body {
     border-collapse: collapse;
     border: 2px solid black;
     table-layout: fixed;
-    width: var(--grid-size);
-    height: var(--grid-size);
+    width: 500px;
+    height: 500px;
 }
 
 #sudoku-root #sudoku-container-grid .sudoku-row, #sudoku-root #sudoku-container-grid .sudoku-cell { 
@@ -156,8 +157,8 @@ body {
 
 #sudoku-root .sudoku-cell {
     width: 100%;
-    font-size: 7vmin;
-    font-size: var(--digit-size-grid);
+    font-size: 32px;
+    font-size: var(--digit-size-grid-default);
     background-color: var(--color-cell);
     font-family: var(--font-open-sans);
     font-weight: var(--font-weight-digit-input);
@@ -317,8 +318,8 @@ body {
 }
 
 #sudoku-root .sudoku-row .sudoku-cell[data-cell-state="pencil"] {
-    font-size: var(--digit-size-pencil);
-    font-weight: var(--font-weight-digit-pencil);
+    font-size: var(--digit-size-pencil-default);
+    font-weight: 500;
     letter-spacing: 2px;
     color: black;
     word-wrap: break-word;
@@ -349,10 +350,10 @@ body {
 #sudoku-root #sudoku-container-bottom #sudoku-button-container-actions .sudoku-buttons-actions,
 #sudoku-root #sudoku-container-bottom #sudoku-button-container-actions .sudoku-buttons-actions:active,
 #sudoku-root #sudoku-container-bottom #sudoku-button-container-actions .sudoku-buttons-actions:focus {
-    margin-top: calc(var(--grid-size)*0.03);
+    margin-top: calc(var(--grid-size-default)*0.03);
     width: calc(100% / 6);
-    height: calc(var(--grid-size)*0.1);
-    font-size: calc(var(--grid-size)*0.03);
+    height: calc(var(--grid-size-default)*0.1);
+    font-size: calc(var(--grid-size-default)*0.03);
     font-weight: 600;
     color: black;
     border: none;
@@ -418,15 +419,15 @@ body {
 #sudoku-root #sudoku-container-bottom #sudoku-button-container-values .sudoku-buttons-values:active,
 #sudoku-root #sudoku-container-bottom #sudoku-button-container-values .sudoku-buttons-values:focus {
     width: calc(100% / 10);
-    height: calc(var(--grid-size)*0.1);
-    font-size: calc(var(--grid-size)*0.08);
+    height: calc(var(--grid-size-default)*0.1);
+    font-size: calc(var(--grid-size-default)*0.08);
     font-weight: 500;
     color: rgb(19, 81, 110);
     border: none;
     outline: none;
     border-radius: 20%;
     margin-right:calc(100%/100);
-    margin-top: calc(var(--grid-size)*0.02);
+    margin-top: calc(var(--grid-size-default)*0.02);
     transition: background-color 0.3s ease-out, text-shadow 0.5s ease, color 0.3s ease;
     background-color: white;
     text-shadow: 0 0 0vmin #fff, 0 0 0vmin #fff, 0 0 0vmin #fff, 0 0 0vmin #fff;
@@ -461,7 +462,7 @@ body {
 /* Button testing */
 
 #sudoku-root #sudoku-container-top #sudoku-container-top-bottom #sudoku-button-container-core button {
-    font-size: var(--top-bar-button-font-size);
+    font-size: 1em;
     font-weight: 600;
     margin-right: 8px;
     outline: none;
