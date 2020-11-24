@@ -183,6 +183,7 @@ var sudoku = function () {
 
     var grid = new GridData(GRID_SIZE.NORMAL);
     var elems = null;
+    var debugging = false;
 
     function init () {
         isTouch = detectMob();
@@ -540,7 +541,8 @@ var sudoku = function () {
         var pointerDown = false;
 
         //document.addEventListener('pointerdown', () => { if (!mouseOverRoot) selection.remove(); });
-        document.addEventListener('pointerup', onPointerUp);
+        if (!isTouch) document.addEventListener('pointerup', onPointerUp);
+        else document.addEventListener('touchend', onPointerUp);
 
         function addEvent(element, eventName, callback) {
             if (element.addEventListener) element.addEventListener(eventName, callback, false);
@@ -1392,6 +1394,7 @@ var sudoku = function () {
     
             // Root
             this.root = buildElement('div', ATTR.ID.ROOT, null, null, null, this.docRoot);
+            if (!debugging || true) this.root.oncontextmenu = (e) => { return false; }
     
             // Containers
             this.containerTop = buildElement('div', ATTR.ID.CONTAINER_TOP, null, null, null, this.root);
@@ -1553,17 +1556,25 @@ var sudoku = function () {
             if (y % grid.groupHeight == grid.groupHeight - 1 && y != grid.height - 1) td.setAttribute(STYLE_ATTR.CELL_BORDER_BOTTOM, "");
     
             (function (cell, onPointerDown, onOverCell) {
-                cell.addEventListener('pointerdown', (e) => {
-                    e.preventDefault();
-                    onPointerDown(cell);
-                });
-                cell.addEventListener('pointerover', (e) => {
-                    e.preventDefault();
-                    onOverCell(cell);
-                });
-                cell.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                });
+                if (!isTouch) {
+                    cell.addEventListener('pointerdown', (e) => {
+                        e.preventDefault();
+                        onPointerDown(cell);
+                    });
+                    cell.addEventListener('pointerover', (e) => {
+                        e.preventDefault();
+                        onOverCell(cell);
+                    });
+                } else {
+                    cell.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        onPointerDown(cell);
+                    });
+                    cell.addEventListener('touchmove', (e) => {
+                        e.preventDefault();
+                        onOverCell(cell);
+                    });
+                }
             })(td, input.onPointerDown, input.onOverCell);
     
             parentRow.append(td);
