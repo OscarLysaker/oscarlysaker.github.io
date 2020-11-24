@@ -537,12 +537,12 @@ var sudoku = function () {
 
     var input = function () {
 
-        var mouseOverRoot = true;
+        var mouseOverRoot = false;
         var pointerDown = false;
 
         //document.addEventListener('pointerdown', () => { if (!mouseOverRoot) selection.remove(); });
-        if (!isTouch) document.addEventListener('pointerup', onPointerUp);
-        else document.addEventListener('touchend', onPointerUp);
+        if (!isTouch) document.addEventListener('pointerup', (e) => { if (input.mouseOverRoot) onPointerUp(); else selection.remove(); });
+        else document.addEventListener('touchend', (e) => { if (input.mouseOverRoot) onPointerUp(); else selection.remove(); });
 
         function addEvent(element, eventName, callback) {
             if (element.addEventListener) element.addEventListener(eventName, callback, false);
@@ -615,7 +615,7 @@ var sudoku = function () {
             selection.dragFirstCell = cell;
         }
 
-        return {addEvent:addEvent, onOverCell:onOverCell, onPointerDown:onPointerDown};
+        return {addEvent:addEvent, onOverCell:onOverCell, onPointerDown:onPointerDown, mouseOverRoot:mouseOverRoot};
     }();
 
     //  +----------------------+
@@ -1395,6 +1395,8 @@ var sudoku = function () {
             // Root
             this.root = buildElement('div', ATTR.ID.ROOT, null, null, null, this.docRoot);
             if (!debugging || true) this.root.oncontextmenu = (e) => { return false; }
+            this.root.addEventListener('pointerover', (e) => { input.mouseOverRoot = true; });
+            this.root.addEventListener('pointerout', (e) => { input.mouseOverRoot = false; });
     
             // Containers
             this.containerTop = buildElement('div', ATTR.ID.CONTAINER_TOP, null, null, null, this.root);

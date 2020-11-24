@@ -351,8 +351,8 @@ body {
 #sudoku-root #sudoku-container-bottom #sudoku-button-container-actions .sudoku-buttons-actions:focus {
     margin-top: calc(var(--grid-size)*0.03);
     width: calc(100% / 6);
-    height: calc(var(--grid-size)*0.1);
-    font-size: calc(var(--grid-size)*0.03);
+    height: calc(var(--grid-size)*0.11);
+    font-size: calc(var(--grid-size)*0.035);
     font-weight: 600;
     color: black;
     border: none;
@@ -363,7 +363,7 @@ body {
     border-radius: 20%;
 }
 
-#sudoku-root #sudoku-container-bottom #sudoku-button-container-actions .sudoku-buttons-actions:hover {
+#sudoku-root #sudoku-container-bottom #sudoku-button-container-actions .sudoku-buttons-actions:active {
     background-color: #bad4dbab;
     cursor:pointer;
 }
@@ -389,15 +389,15 @@ body {
     margin-right:0vmin;
 }
 
-#sudoku-root #sudoku-container-bottom #sudoku-button-container-actions #sudoku-button-pen [data-sudoku-button-state="active"],
-#sudoku-root #sudoku-container-bottom #sudoku-button-container-actions #sudoku-button-pen [data-sudoku-button-state="active"]:hover {
+#sudoku-root #sudoku-container-bottom #sudoku-button-container-actions button.sudoku-buttons-actions[data-button-state="active"],
+#sudoku-root #sudoku-container-bottom #sudoku-button-container-actions button.sudoku-buttons-actions[data-button-state="active"]:hover {
     background-color: #bad4dbab;
 }
 
-#sudoku-root #sudoku-container-bottom #sudoku-button-container-actions button[data-sudoku-button-state="disabled"],
-#sudoku-root #sudoku-container-bottom #sudoku-button-container-actions button[data-sudoku-button-state="disabled"] img,
-#sudoku-root #sudoku-container-bottom #sudoku-button-container-actions button[data-sudoku-button-state="disabled"] div,
-#sudoku-root #sudoku-container-bottom #sudoku-button-container-actions button[data-sudoku-button-state="disabled"]:hover {
+#sudoku-root #sudoku-container-bottom #sudoku-button-container-actions button[data-button-state="disabled"],
+#sudoku-root #sudoku-container-bottom #sudoku-button-container-actions button[data-button-state="disabled"] img,
+#sudoku-root #sudoku-container-bottom #sudoku-button-container-actions button[data-button-state="disabled"] div,
+#sudoku-root #sudoku-container-bottom #sudoku-button-container-actions button[data-button-state="disabled"]:hover {
     opacity: 0.6;
     cursor: default;
     background-color: white;
@@ -418,8 +418,8 @@ body {
 #sudoku-root #sudoku-container-bottom #sudoku-button-container-values .sudoku-buttons-values:active,
 #sudoku-root #sudoku-container-bottom #sudoku-button-container-values .sudoku-buttons-values:focus {
     width: calc(100% / 10);
-    height: calc(var(--grid-size)*0.1);
-    font-size: calc(var(--grid-size)*0.08);
+    height: calc(var(--grid-size)*0.12);
+    font-size: calc(var(--grid-size)*0.098);
     font-weight: 500;
     color: rgb(19, 81, 110);
     border: none;
@@ -439,17 +439,17 @@ body {
     margin-right:0vmin;
 }
 
-#sudoku-root #sudoku-container-bottom #sudoku-button-container-values .sudoku-buttons-values:hover {
+#sudoku-root #sudoku-container-bottom #sudoku-button-container-values .sudoku-buttons-values:active {
     background-color: #bad4dbab;
     text-shadow: 0 0 0.4vmin #fff, 0 0 1vmin #fff, 0 0 1.8vmin #fff, 0 0 2.2vmin #fff;
     color: rgb(56, 112, 138);
     cursor: pointer;
 }
 
-#sudoku-root #sudoku-container-bottom #sudoku-button-container-values .sudoku-buttons-values [data-sudoku-button-state="disabled"],
-#sudoku-root #sudoku-container-bottom #sudoku-button-container-values .sudoku-buttons-values [data-sudoku-button-state="disabled"]:hover,
-#sudoku-root #sudoku-container-bottom #sudoku-button-container-values .sudoku-buttons-values [data-sudoku-button-state="disabled"]:active,
-#sudoku-root #sudoku-container-bottom #sudoku-button-container-values .sudoku-buttons-values [data-sudoku-button-state="disabled"]:focus {
+#sudoku-root #sudoku-container-bottom #sudoku-button-container-values .sudoku-buttons-values [data-button-state="disabled"],
+#sudoku-root #sudoku-container-bottom #sudoku-button-container-values .sudoku-buttons-values [data-button-state="disabled"]:hover,
+#sudoku-root #sudoku-container-bottom #sudoku-button-container-values .sudoku-buttons-values [data-button-state="disabled"]:active,
+#sudoku-root #sudoku-container-bottom #sudoku-button-container-values .sudoku-buttons-values [data-button-state="disabled"]:focus {
     opacity: 0.3;
     cursor: default;
     background-color: white;
