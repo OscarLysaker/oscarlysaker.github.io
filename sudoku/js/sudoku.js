@@ -1439,6 +1439,18 @@ var sudoku = function () {
     
             // Table
             this.containerGridElems.table = buildElement('table', ATTR.ID.TABLE, null, null, null, this.containerGrid);
+            if (isTouch) {
+                this.containerGridElems.table.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    var elements = document.elementsFromPoint(e.touches.item(0).clientX, e.touches.item(0).clientY);
+                    for (var i=0, j=elements.length; i<j; i++) {
+                        if (elements[i].getAttribute('class') == ATTR.CLASS.CELL) {
+                            input.onOverCell(elements[i]);
+                            return;
+                        }
+                    }
+                });
+            }
     
             // Rows
     
@@ -1569,10 +1581,6 @@ var sudoku = function () {
                     cell.addEventListener('touchstart', (e) => {
                         e.preventDefault();
                         onPointerDown(cell);
-                    });
-                    cell.addEventListener('touchmove', (e) => {
-                        e.preventDefault();
-                        onOverCell(cell);
                     });
                 }
             })(td, input.onPointerDown, input.onOverCell);
