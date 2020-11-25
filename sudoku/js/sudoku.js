@@ -2,15 +2,15 @@ var sudoku = function () {
 
     var samplePuzzles = {
         "easy" : [
-            [0,6,0,0,8,0,4,2,0,
-             0,1,5,0,6,0,3,7,8,
-             0,0,0,4,0,0,0,6,0,
-             1,0,0,6,0,4,8,3,0,
-             3,0,6,0,1,0,7,0,5,
-             0,8,0,3,5,0,0,0,0,
-             8,3,0,9,4,0,0,0,0,
-             0,7,2,1,3,0,9,0,0,
-             0,0,9,0,2,0,6,1,0]
+            ["0","6","0","0","8","0","4","2","0",
+             "0","1","5","0","6","0","3","7","8",
+             "0","0","0","4","0","0","0","6","0",
+             "1","0","0","6","0","4","8","3","0",
+             "3","0","6","0","1","0","7","0","5",
+             "0","8","0","3","5","0","0","0","0",
+             "8","3","0","9","4","0","0","0","0",
+             "0","7","2","1","3","0","9","0","0",
+             "0","0","9","0","2","0","6","1","0"]
         ]
     }
 
@@ -64,10 +64,10 @@ var sudoku = function () {
             BTN_CONTAINER_ACTIONS : 'sudoku-button-container-actions',
             BTN_CONTAINER_VALUES : 'sudoku-button-container-values',
             // Top buttons
-            BTN_NEW_SAMPLE : 'sudoku-button-new-sample',
-            BTN_RESET : 'sudoku-button-reset',
-            BTN_SOLVE : 'sudoku-button-solve',
             BTN_CREATE_PUZZLE : 'sudoku-button-create-puzzle',
+            BTN_RESTART : 'sudoku-button-restart',
+            BTN_SOLVE : 'sudoku-button-solve',
+            BTN_CLEAR : 'sudoku-button-clear',
             // Bottom input buttons
             BTN_UNDO : 'sudoku-button-undo',
             BTN_REDO : 'sudoku-button-redo',
@@ -142,6 +142,35 @@ var sudoku = function () {
         return toMatch.some((toMatchItem) => { return navigator.userAgent.match(toMatchItem); });
     }
 
+    function CellData (cell, index, x, y, groupIndex, state, value) {
+        this.cell = cell;
+        this.index = index;
+        this.x = x;
+        this.y = y;
+        this.g = groupIndex;
+        var _state = state;
+        var _value = value;
+        var _data = new Map();
+
+        Object.defineProperty(this, 'state', {
+            get () { return _state; },
+            set (v) { this.cell.setAttribute(ATTR.DATA.CELL_STATE, v); return _state = v; }
+        });
+        Object.defineProperty(this, 'value', {
+            get () { return _value; },
+            set (v) { this.cell.setAttribute(ATTR.DATA.CELL_VALUE, v); return _value = v; }
+        });
+
+        this.removeData = (dataAttr) => { if (_data.delete(dataAttr)) this.cell.removeAttribute(dataAttr); }
+        this.hasData = (dataAttr) => _data.has(dataAttr);
+        this.getData = (dataAttr) => _data.get(dataAttr);
+        this.setData = (dataAttr, value) => {
+            if (_data.get(dataAttr) == value) return;
+            this.cell.setAttribute(dataAttr, value);
+            _data.set(dataAttr, value);
+        }
+    }
+
     function GridData (gridSize=GRID_SIZE.NORMAL) {
         this.emptyValue = "0";
         this.possibleValues = allPossibleValues.slice(0);
@@ -175,70 +204,94 @@ var sudoku = function () {
             this.groupHeight = (this.height / this.groupsY)|0;
             this.cellsPerGroup = this.groupWidth * this.groupHeight;
         }
+        this.cells = [];
+        this.cellMap = new Map();
+        this.cellData = [];
+        this.setCells = (cellArray) => {
+            this.cells.length = 0;
+            for (var i=0, j=cellArray.length; i<j; i++) {
+                var x = Number(cellArray[i].getAttribute(ATTR.DATA.CELL_X));
+                var y = Number(cellArray[i].getAttribute(ATTR.DATA.CELL_Y));
+                var g = Number(cellArray[i].getAttribute(ATTR.DATA.CELL_GROUP_INDEX));
+                var v = cellArray[i].getAttribute(ATTR.DATA.CELL_VALUE);
+                var s = cellArray[i].getAttribute(ATTR.DATA.CELL_STATE);
+                this.cells.push(cellArray[i]);
+                this.cellMap.set(cellArray[i], new CellData(cellArray[i], i, x, y, g, s, v));
+                this.cellData.push(this.cellMap.get(cellArray[i]));
+            }
+        }
+        this.puzzleData = null;
         this.setSize(gridSize);
     }
-
-    //var grid = new GridData(GRID_SIZE.NORMAL);
-    //var elems = new sudokuBuilder.SudokuElems(null, grid);
 
     var grid = new GridData(GRID_SIZE.NORMAL);
     var elems = null;
     var debugging = false;
+    var allowSolve = false;
 
     function init () {
         isTouch = detectMob();
         if (isTouch) document.head.querySelector('[href="./css/sudoku.css"]').setAttribute("href", "./css/sudoku-mobile.css");
         elems = new builder.SudokuElems(null);
+        grid.setCells(elems.cells);
     }
 
-    function reset () {
-        console.log("Resetting sudoku puzzle...");
+    function reset (playerInput=false) {
         selection.remove();
-
         pencil.toggle(false);
-
         elems.containerBottomElems.top.buttons.hint.root.setAttribute(ATTR.DATA.BUTTON_STATE, BUTTON_STATE.DISABLED);
         for (var i=0, j=elems.containerBottomElems.bottom.buttons.length; i<j; i++) {
             elems.containerBottomElems.bottom.buttons[i].removeAttribute("data-sudoku-button-state", "disabled");
         }
         clock.reset();
-        actions.setCellValue(elems.cells, grid.emptyValue, false, false, CELL_STATE.NORMAL);
+        actions.setCellValue(grid.cellData, grid.emptyValue, false, false, CELL_STATE.NORMAL);
         removeAllAttributesFromAll();
         log.reset();
         arrow.remove();
-        console.log("Sudoku successfully reset!");
+        if (playerInput) {
+            allowSolve = false;
+            hints.allow = false;
+        }
     }
 
     var cellTimeouts = [];
 
-    function initPuzzle (puzzle) {
+    function initPuzzle (generateNew=false) {
         reset();
+        if (generateNew) grid.puzzleData = generate.newPuzzle();
+        else if (grid.puzzleData == null) return;
         elems.containerBottomElems.top.buttons.hint.root.removeAttribute(ATTR.DATA.BUTTON_STATE);
         while (cellTimeouts.length > 0) clearTimeout(cellTimeouts.splice(0,1)[0]);
 
-        elems.cells.forEach((value, key, parent) => { value.removeAttribute("data-sudoku-cell-start-anim"); });
+        grid.cellMap.forEach((cellData, key, map) => { cellData.removeData("data-sudoku-cell-start-anim"); });
 
         var animOffset = 4;
         var animTotal = 4 * 81 + 400;
         cellTimeouts.push(
             setTimeout(function () {
-                elems.cells.forEach((value, key, parent) => { value.removeAttribute("data-sudoku-cell-start-anim"); });
+                grid.cellMap.forEach((cellData, key, map) => { cellData.removeData("data-sudoku-cell-start-anim"); });
                 clock.start();
                 console.log("Started clock...");
             }, animTotal)
         );
-        for (var i=0, j=elems.cells.length; i<j; i++) {
-            (function (cell, value, state, timeout) {
+        for (var cellData of grid.cellMap.values()) {
+            (function (cellData, value, state, timeout) {
                 cellTimeouts.push(
                     setTimeout(function () {
-                        cell.setAttribute("data-sudoku-cell-start-anim", "");
-                        actions.setCellValue(cell, value, false, false, state);
+                        cellData.setData("data-sudoku-cell-start-anim", "");
+                        actions.setCellValue(cellData, value, false, false, state);
                     }, timeout)
                 );
-            })(elems.cells[i], puzzle[i], puzzle[i] == grid.emptyValue ? CELL_STATE.NORMAL : CELL_STATE.CLUE, i * animOffset);
+            })(cellData, grid.puzzleData.puzzle[cellData.index], grid.puzzleData.puzzle[cellData.index] == grid.emptyValue ? CELL_STATE.NORMAL : CELL_STATE.CLUE, cellData.index * animOffset);
         }
 
-        //logPuzzleArrayAsTable(puzzle);
+        allowSolve = true;
+        hints.allow = true;
+    }
+
+    function restart () {
+        if (grid.puzzleData == null) return;
+        initPuzzle();
     }
 
     //  +------------------+
@@ -263,15 +316,48 @@ var sudoku = function () {
         };
     }();
 
+    //  +------------------+
+    //  |      Pencil      |
+    //  +------------------+
+
+    var hints = function () {
+
+        this.allow = false;
+
+        function reveal () {
+            if (!this.allow || grid.puzzleData == null) return;
+            if (selection.cells.length == 0) revealRandom();
+            else if (selection.cells.length == 1) revealSelected();
+        }
+
+        function revealSelected () {
+            if (selection.cells[0].value != grid.puzzleData.solution[selection.cells[0].index]) {
+                actions.setCellValue(selection.cells[0], grid.puzzleData.solution[selection.cells[0].index], false, true, CELL_STATE.NORMAL);
+            }
+        }
+
+        function revealRandom () {
+            var unresolved = [];
+            for (var cellData of grid.cellMap.values()) {
+                if (cellData.state != CELL_STATE.PENCIL && cellData.value != grid.emptyValue) unresolved.push(cellData);
+            }
+            if (unresolved.length == 0) return;
+            var index = Math.floor(Math.random()*unresolved.length);
+            if (index >= unresolved.length) index = unresolved.length-1;
+            actions.setCellValue(unresolved[index], grid.puzzleData.solution[i], false, true, CELL_STATE.NORMAL);
+        }
+
+        return {
+            allow:allow,
+            reveal:reveal
+        }
+    }();
+
     //  +-------------------+
     //  |      Actions      |
     //  +-------------------+
 
     var actions = function () {
-
-        function getCellAt (x, y) {
-            return elems.cells[y * grid.width + x];
-        }
 
         function getCellGroup (gIndex) {
             var groupX = (gIndex % grid.groupsX) * grid.groupWidth;
@@ -279,7 +365,7 @@ var sudoku = function () {
             var result = [];
 
             for (var x=0, xl=grid.groupWidth; x<xl; x++) for (y=0, yl=grid.groupHeight; y<yl; y++) {
-                result.push(elems.cells[(groupY + y) * grid.width + groupX + x]);
+                result.push(grid.cellMap.get(grid.cells[(groupY + y) * grid.width + groupX + x]));
             }
 
             return result;
@@ -287,21 +373,21 @@ var sudoku = function () {
 
         function getCellRow (yIndex) {
             var result = [];
-            for (var i=0, j=grid.width; i<j; i++) result.push(elems.cells[yIndex * grid.width + i]);
+            for (var i=0, j=grid.width; i<j; i++) result.push(grid.cellMap.get(grid.cells[yIndex * grid.width + i]));
             return result;
         }
 
         function getCellColumn (xIndex) {
             var result = [];
-            for (var i=0, j=grid.height; i<j; i++) result.push(elems.cells[i * grid.width + xIndex]);
+            for (var i=0, j=grid.height; i<j; i++) result.push(grid.cellMap.get(grid.cells[i * grid.width + xIndex]));
             return result;
         }
 
         function deleteDigit (playerInput=false, logAction=false) {
             if (selection.cells.length == 0) return;
-            actions.setCellValue(selection.cells.slice(0), grid.emptyValue, playerInput, logAction, CELL_STATE.NORMAL);
+            actions.setCellValue(selection.cells, grid.emptyValue, playerInput, logAction, CELL_STATE.NORMAL);
         }
-        
+
         function setCellValue (cells, value, playerInput=false, logAction=false, forcedType=CELL_STATE.NORMAL) {
             if (!Array.isArray(cells)) cells = [cells];
 
@@ -324,10 +410,11 @@ var sudoku = function () {
             if (newValue == grid.emptyValue) newInnerText = "";
 
             for (var i=0, j=cells.length; i<j; i++) {
-                var cell = cells[i];
+                var cellData = cells[i];
+                var cell = cellData.cell;
 
                 // Clue cells can't be manipulated by player, skip
-                if (cell.getAttribute(ATTR.DATA.CELL_STATE) == CELL_STATE.CLUE && playerInput) continue;
+                if (cellData.state == CELL_STATE.CLUE && playerInput) continue;
 
                 // Temp values prone for manipulation
                 var tempNewType = newType;
@@ -335,8 +422,8 @@ var sudoku = function () {
                 var tempNewInnerText = newInnerText;
 
                 // Current values
-                var currentType = cell.getAttribute(ATTR.DATA.CELL_STATE);
-                var currentValue = cell.getAttribute(ATTR.DATA.CELL_VALUE);
+                var currentType = cellData.state;
+                var currentValue = cellData.value;
 
                 // If value is 0 or previous value, delete value
                 if (tempNewValue == grid.emptyValue || (tempNewValue == currentValue && currentType == tempNewType)) {
@@ -371,42 +458,42 @@ var sudoku = function () {
                 }
 
                 // Store values
-                affectedCells.push(cell);
+                affectedCells.push(cellData);
                 previousValues.push(currentValue);
                 previousTypes.push(currentType);
                 newValues.push(tempNewValue);
                 newTypes.push(tempNewType);
 
                 // Apply values
-                cell.innerText = tempNewInnerText;
-                cell.setAttribute(ATTR.DATA.CELL_VALUE, tempNewValue);
-                cell.setAttribute(ATTR.DATA.CELL_STATE, tempNewType);
+                cellData.cell.innerText = tempNewInnerText;
+                cellData.value = tempNewValue;
+                cellData.state = tempNewType;
 
                 // If applied number, check if pencils should be removed
                 if (tempNewType == CELL_STATE.NORMAL && playerInput) {
                     var checkCells = [];
                     
-                    var cellsRow = getCellRow(parseInt(cell.getAttribute(ATTR.DATA.CELL_Y)));
-                    var cellsColumn = getCellColumn(parseInt(cell.getAttribute(ATTR.DATA.CELL_X)));
-                    var cellsGroup = getCellGroup(parseInt(cell.getAttribute(ATTR.DATA.CELL_GROUP_INDEX)));
+                    var cellsRow = getCellRow(cellData.y);
+                    var cellsColumn = getCellColumn(cellData.x);
+                    var cellsGroup = getCellGroup(cellData.g);
 
                     console.log("Captured " + (cellsRow.length + cellsColumn.length + cellsGroup.length) + " cells...");
 
                     for (var ii=0, jj=cellsRow.length; ii<jj; ii++) {
-                        if (checkCells.indexOf(cellsRow[ii]) < 0 && cellsRow[ii] != cell && cellsRow[ii].getAttribute(ATTR.DATA.CELL_STATE) == CELL_STATE.PENCIL) checkCells.push(cellsRow[ii]);
-                        if (checkCells.indexOf(cellsColumn[ii]) < 0 && cellsColumn[ii] != cell && cellsColumn[ii].getAttribute(ATTR.DATA.CELL_STATE) == CELL_STATE.PENCIL) checkCells.push(cellsColumn[ii]);
-                        if (checkCells.indexOf(cellsGroup[ii]) < 0 && cellsGroup[ii] != cell && cellsGroup[ii].getAttribute(ATTR.DATA.CELL_STATE) == CELL_STATE.PENCIL) checkCells.push(cellsGroup[ii]);
+                        if (checkCells.indexOf(cellsRow[ii]) < 0 && cellsRow[ii] != cellData && cellsRow[ii].state == CELL_STATE.PENCIL) checkCells.push(cellsRow[ii]);
+                        if (checkCells.indexOf(cellsColumn[ii]) < 0 && cellsColumn[ii] != cellData && cellsColumn[ii].state == CELL_STATE.PENCIL) checkCells.push(cellsColumn[ii]);
+                        if (checkCells.indexOf(cellsGroup[ii]) < 0 && cellsGroup[ii] != cellData && cellsGroup[ii].state == CELL_STATE.PENCIL) checkCells.push(cellsGroup[ii]);
                     }
 
                     console.log("Checking " + checkCells.length + " cells...");
 
                     for (var ii=0, jj=checkCells.length; ii<jj; ii++) {
-                        if (String(checkCells[ii].getAttribute(ATTR.DATA.CELL_VALUE)).indexOf(String(tempNewValue)) < 0) continue;
-                        var checkCellValue = checkCells[ii].getAttribute(ATTR.DATA.CELL_VALUE);
+                        if (String(checkCells[ii].value).indexOf(String(tempNewValue)) < 0) continue;
+                        var checkCellValue = checkCells[ii].value;
                         
                         affectedCells.push(checkCells[ii]);
                         previousValues.push(checkCellValue);
-                        previousTypes.push(checkCells[ii].getAttribute(ATTR.DATA.CELL_STATE));
+                        previousTypes.push(checkCells[ii].state);
 
                         var checkCellNewInnerText = String(checkCellValue).replace(String(tempNewValue), "");
 
@@ -414,14 +501,14 @@ var sudoku = function () {
                             newValues.push(grid.emptyValue);
                             newTypes.push(CELL_STATE.NORMAL);
 
-                            checkCells[ii].setAttribute(ATTR.DATA.CELL_VALUE, grid.emptyValue);
-                            checkCells[ii].setAttribute(ATTR.DATA.CELL_STATE, CELL_STATE.NORMAL);
+                            checkCells[ii].value = grid.emptyValue;
+                            checkCells[ii].state = CELL_STATE.NORMAL;
                         } else {
                             newValues.push(parseInt(checkCellNewInnerText));
                             newTypes.push(CELL_STATE.PENCIL);
 
-                            checkCells[ii].setAttribute(ATTR.DATA.CELL_VALUE, parseInt(checkCellNewInnerText));
-                            checkCells[ii].setAttribute(ATTR.DATA.CELL_STATE, CELL_STATE.PENCIL);
+                            checkCells[ii].value = parseInt(checkCellNewInnerText);
+                            checkCells[ii].state = CELL_STATE.PENCIL;
                         }
 
                         checkCells[ii].innerText = checkCellNewInnerText;
@@ -430,8 +517,8 @@ var sudoku = function () {
             }
 
             if (selection.cells.length == 1) {
-                highlights.forSelected(selection.cells[0]);
-                if (selection.cells[0].getAttribute(ATTR.DATA.CELL_STATE) == CELL_STATE.NORMAL) highlights.updatePencil();
+                highlights.forSelected();
+                if (selection.cells[0].state == CELL_STATE.NORMAL) highlights.updatePencil();
             }
 
             highlights.updateError();
@@ -457,31 +544,32 @@ var sudoku = function () {
         var dragFirstCell = null;
 
         function remove () {
-            cells.forEach((cell) => { cell.removeAttribute(ATTR.DATA.SELECTED); });
+            cells.forEach((cell) => { cell.removeData(ATTR.DATA.SELECTED); });
             cells.length = 0;
             highlights.remove();
         }
 
         function select (cell, add=false) {
+            cell = grid.cellMap.get(cell);
             if (add) {
                 if (cells.length == 1) {
                     highlights.remove();
-                    cells[0].setAttribute(ATTR.DATA.SELECTED, SELECTION.MULTI);
+                    cells[0].setData(ATTR.DATA.SELECTED, SELECTION.MULTI);
                 }
                 if (cells.indexOf(cell) >= 0) return;
-                cell.setAttribute(ATTR.DATA.SELECTED, SELECTION.MULTI);
+                cell.setData(ATTR.DATA.SELECTED, SELECTION.MULTI);
                 cells.push(cell);
             } else {
                 remove();
-                cell.setAttribute(ATTR.DATA.SELECTED, SELECTION.SINGLE);
+                cell.setData(ATTR.DATA.SELECTED, SELECTION.SINGLE);
                 cells.push(cell);
-                highlights.forSelected(cell);
+                highlights.forSelected();
                 highlights.updatePencil();
             }
         }
 
         function setValue (value) {
-            actions.setCellValue(cells.slice(0), value, true, true);
+            actions.setCellValue(cells, value, true, true);
         }
 
         return {cells:cells, dragging:dragging, dragFirstCell:dragFirstCell, remove:remove, select:select, setValue:setValue};
@@ -497,7 +585,7 @@ var sudoku = function () {
 
         function remove () {
             if (cell == null) return;
-            cell.removeAttribute(CELL_ATTR.ARROW_HIGHLIGHT);
+            cell.removeData(ATTR.DATA.ARROW_HIGHLIGHT);
             cell = null;
         }
 
@@ -509,8 +597,8 @@ var sudoku = function () {
                 ny = Math.floor(grid.height / 2);
             } else {
                 if (cell == null) cell = selection.cells[selection.cells.length-1];
-                nx = parseInt(cell.getAttribute(ATTR.DATA.CELL_X));
-                ny = parseInt(cell.getAttribute(ATTR.DATA.CELL_Y));    
+                nx = cell.x;
+                ny = cell.y;    
                 if (x != 0) nx += x > 0 ? 1 : -1;
                 if (y != 0) ny += y > 0 ? 1 : -1;
             }
@@ -521,11 +609,11 @@ var sudoku = function () {
             if (ny < 0) ny = grid.height-1;
             
             arrow.remove();
-            cell = elems.cells[ny * grid.width + nx];
-            cell.setAttribute(ATTR.DATA.ARROW_HIGHLIGHT, "");
+            cell = grid.cellData[ny * grid.width + nx];
+            cell.setData(ATTR.DATA.ARROW_HIGHLIGHT, "");
 
-            if (selection.cells.length >= 0 && KEY_DOWN.SHIFT) selection.set(cell, true);
-            else selection.set(cell);
+            if (selection.cells.length >= 0 && KEY_DOWN.SHIFT) selection.select(cell.cell, true);
+            else selection.select(cell.cell);
         }
 
         return {cell:cell, move:move, remove:remove};
@@ -625,32 +713,26 @@ var sudoku = function () {
     var highlights = function () {
 
         function remove () {
-            for (var i=0, j=elems.cells.length; i<j; i++) {
-                elems.cells[i].removeAttribute(ATTR.DATA.HIGHLIGHT);
-                elems.cells[i].removeAttribute(ATTR.DATA.DIGIT_HIGHLIGHT);
+            for (var cellData of grid.cellMap.values()) {
+                cellData.removeData(ATTR.DATA.HIGHLIGHT);
+                cellData.removeData(ATTR.DATA.DIGIT_HIGHLIGHT);
             }
         }
 
         function updatePencil () {
 
-            document.querySelectorAll(`[${ATTR.DATA.CELL_STATE}=${CELL_STATE.PENCIL}]`).forEach((cell) => {
-                cell.innerText = cell.getAttribute(ATTR.DATA.CELL_VALUE);
-            });
+            // Reset pencil cells
+            for (var cellData of grid.cellMap.values()) if (cellData.state == CELL_STATE.PENCIL) cellData.cell.innerText = cellData.value;
 
             // Update highlights
-            if (selection.cells.length == 1 && (selection.cells[0].getAttribute(ATTR.DATA.CELL_STATE) != CELL_STATE.NORMAL && selection.cells[0].getAttribute(ATTR.DATA.CELL_STATE) != CELL_STATE.CLUE)) return;
+            if (selection.cells.length == 1 && (selection.cells[0].state != CELL_STATE.NORMAL && selection.cells[0].state != CELL_STATE.CLUE)) return;
             if (selection.cells[0] == undefined) return;
-            for (var i=0, j=elems.cells.length; i<j; i++) {
-                if (elems.cells[i].getAttribute(ATTR.DATA.CELL_STATE) != CELL_STATE.PENCIL) continue;
-                var cell = elems.cells[i];
-                console.log("Checking pencil cell...");
-                var cellValue = "" + String(cell.getAttribute(ATTR.DATA.CELL_VALUE));
-                var selectedValue = "" + String(selection.cells[0].getAttribute(ATTR.DATA.CELL_VALUE));
+            for (var cellData of grid.cellMap.values()) {
+                if (cellData.state != CELL_STATE.PENCIL) continue;
+                var cellValue = "" + String(cellData.value);
+                var selectedValue = "" + String(selection.cells[0].value);
                 if (cellValue.indexOf(selectedValue) >= 0) {
-                    console.log("Cell has selected value!!");
-                    console.log("Found value " + selectedValue + " inside " + cellValue);
-
-                    cell.innerHTML = "";
+                    cellData.cell.innerHTML = "";
 
                     var tempSpanLow = document.createElement("span");
                     tempSpanLow.setAttribute(ATTR.DATA.PENCIL_HIGHLIGHT, "");
@@ -662,157 +744,116 @@ var sudoku = function () {
                     var splitValue = cellValue.split("");
                     for (var ii=0, jj=splitValue.length; ii<jj; ii++) {
                         if (splitValue[ii] == selectedValue) {
-                            if (tempSpanLow.innerText != "") cell.append(tempSpanLow);
+                            if (tempSpanLow.innerText != "") cellData.cell.append(tempSpanLow);
                             tempSpanLow = document.createElement("span");
                             tempSpanLow.setAttribute(ATTR.DATA.PENCIL_HIGHLIGHT, "");
-                            cell.append(tempSpanHigh);
+                            cellData.cell.append(tempSpanHigh);
                         } else {
                             tempSpanLow.append(splitValue[ii]);
                         }
                     }
 
-                    if (tempSpanLow.innerText != "") cell.append(tempSpanLow);
+                    if (tempSpanLow.innerText != "") cellData.cell.append(tempSpanLow);
                 }
             }
         }
 
-        function forSelected (cell) {
+        function forSelected () {
             remove();
-
-            var cellType = cell.getAttribute(ATTR.DATA.CELL_STATE);
-            if (cell.getAttribute(ATTR.DATA.CELL_VALUE) == grid.emptyValue || cellType == CELL_STATE.PENCIL) return;
+            if (selection.cells.length == 0 || selection.cells[0].value == grid.emptyValue || selection.cells[0].state == CELL_STATE.PENCIL) return;
             
-            var cellX = parseInt(cell.getAttribute(ATTR.DATA.CELL_X));
-            var cellY = parseInt(cell.getAttribute(ATTR.DATA.CELL_Y));
+            var cellData = selection.cells[0];
+            var groupX = Math.floor(cellData.x/grid.groupWidth) * grid.groupWidth;
+            var groupY = Math.floor(cellData.y/grid.groupHeight) * grid.groupHeight;
 
-            for (var x=0, xl=grid.width; x<xl; x++) {
-                if (x == cellX) continue;
-                elems.cells[cellY * grid.width + x].setAttribute(ATTR.DATA.HIGHLIGHT, "");
+            for (var i=cellData.y*grid.width, j=cellData.y*grid.width+grid.width; i<j; i++) {
+                if (i!=cellData.index) grid.cellData[i].setData(ATTR.DATA.HIGHLIGHT, "");
             }
 
-            for (var y=0, yl=grid.height; y<yl; y++) {
-                if (y == cellY) continue;
-                elems.cells[y * grid.width + cellX].setAttribute(ATTR.DATA.HIGHLIGHT, "");
+            for (var i=cellData.x, j=cellData.x+grid.width*grid.height; i<j; i+=grid.width) {
+                if (i!=cellData.index) grid.cellData[i].setData(ATTR.DATA.HIGHLIGHT, "");
             }
 
-            var groupX = Math.floor(cellX/grid.groupWidth) * grid.groupWidth;
-            var groupY = Math.floor(cellY/grid.groupHeight) * grid.groupHeight;
-
-            for (var x=0, xl=grid.groupWidth; x<xl; x++) {
-                for (var y=0, yl=grid.groupHeight; y<yl; y++) {
-                    if (cellX == groupX + x && cellY == groupY + y) continue;
-                    elems.cells[(groupY + y) * grid.width + groupX + x].setAttribute(ATTR.DATA.HIGHLIGHT, "");
+            for (var x=groupX, xl=groupX+grid.groupWidth; x<xl; x++) {
+                for (var y=groupY*grid.width, yl=grid.width*(groupY+grid.groupHeight); y<yl; y+=grid.width) {
+                    if (x+y != cellData.index) grid.cellData[x+y].setData(ATTR.DATA.HIGHLIGHT, "");
                 }
             }
 
             // Highlight digits
-            if (cell.getAttribute(ATTR.DATA.CELL_VALUE) != 0 && cell.getAttribute(ATTR.DATA.CELL_STATE) != CELL_STATE.PENCIL) {
-                var value = cell.getAttribute(ATTR.DATA.CELL_VALUE);
-                for (var i=0, j=elems.cells.length; i<j; i++) {
-                    var tempCell = elems.cells[i];
-                    if (tempCell == cell) continue;
-                    if (tempCell.getAttribute(ATTR.DATA.CELL_STATE) == CELL_STATE.PENCIL) continue;
-                    if (tempCell.getAttribute(ATTR.DATA.CELL_VALUE) == value) {
-                        tempCell.setAttribute(ATTR.DATA.DIGIT_HIGHLIGHT, "");
-                    }
+            if (cellData.value != grid.emptyValue && cellData.state != CELL_STATE.PENCIL) {
+                for (var cd of grid.cellMap.values()) {
+                    if (cd == cellData || cd.state == CELL_STATE.PENCIL) continue;
+                    if (cd.value == cellData.value) cd.setData(ATTR.DATA.DIGIT_HIGHLIGHT, "");
                 }
             }
         }
 
         function updateError () {
 
-            document.querySelectorAll('[' + ATTR.DATA.ERROR + ']').forEach((value, key, parent) => { 
-                value.removeAttribute(ATTR.DATA.ERROR);
-            });
+            for (var cellData of grid.cellMap.values()) if (cellData.hasData(ATTR.DATA.ERROR)) cellData.removeData(ATTR.DATA.ERROR);
 
-            var groups = []; // rows = [], columns = [];
-            var rows = [];
-            var columns = [];
+            var groups=[], rows=[], columns=[];
 
             // Check conflicting cells
-            for (var i=0, j=grid.possibleValues.length; i<j; i++) {
-                var checkCells = document.querySelectorAll('[' + ATTR.DATA.CELL_VALUE + '="' + grid.possibleValues[i] + '"]');
-                for (var i0 = 0, j0 = checkCells.length; i0 < j0; i0++) {
-                    if (checkCells[i0].getAttribute(ATTR.DATA.CELL_STATE) == CELL_STATE.PENCIL) continue;
-                    for (var i1 = 0, j1 = checkCells.length; i1 < j1; i1++) {
-                        if (checkCells[i1].getAttribute(ATTR.DATA.CELL_STATE) == CELL_STATE.PENCIL) continue;
-                        if (i0 == i1) continue;
-                        var cell0 = checkCells.item(i0);
-                        var cell1 = checkCells.item(i1);
-
-                        if ((cell0.getAttribute(ATTR.DATA.CELL_X) == cell1.getAttribute(ATTR.DATA.CELL_X))) {
-                            if (columns.indexOf(cell0.getAttribute(ATTR.DATA.CELL_X)) < 0) columns.push(cell0.getAttribute(ATTR.DATA.CELL_X));
-                            cell0.setAttribute(ATTR.DATA.ERROR, CELL_ERROR.DIGIT);
-                            cell1.setAttribute(ATTR.DATA.ERROR, CELL_ERROR.DIGIT);
-                        }
-                        if ((cell0.getAttribute(ATTR.DATA.CELL_Y) == cell1.getAttribute(ATTR.DATA.CELL_Y))) {
-                            if (rows.indexOf(cell0.getAttribute(ATTR.DATA.CELL_Y)) < 0) rows.push(cell0.getAttribute(ATTR.DATA.CELL_Y));
-                            cell0.setAttribute(ATTR.DATA.ERROR, CELL_ERROR.DIGIT);
-                            cell1.setAttribute(ATTR.DATA.ERROR, CELL_ERROR.DIGIT);
-                        }
-                        if ((cell0.getAttribute(ATTR.DATA.CELL_GROUP_INDEX) == cell1.getAttribute(ATTR.DATA.CELL_GROUP_INDEX))) {
-                            if (groups.indexOf(cell0.getAttribute(ATTR.DATA.CELL_GROUP_INDEX)) < 0) groups.push(cell0.getAttribute(ATTR.DATA.CELL_GROUP_INDEX));
-                            cell0.setAttribute(ATTR.DATA.ERROR, CELL_ERROR.DIGIT);
-                            cell1.setAttribute(ATTR.DATA.ERROR, CELL_ERROR.DIGIT);
+            var checkCells = new Map();
+            for (var i=0, j=grid.possibleValues.length; i<j; i++) checkCells.set(grid.possibleValues[i], []);
+            for (var cellData of grid.cellMap.values()) {
+                if (cellData.value != grid.emptyValue && cellData.value.length == 1 && cellData.state != CELL_STATE.PENCIL) checkCells.get(cellData.value).push(cellData);
+            }
+            for (var cells of checkCells.values()) {
+                for (var c0 of cells) {
+                    for (var c1 of cells) {
+                        if (c0 == c1) continue;
+                        if (c0.x == c1.x || c0.y == c1.y || c0.g == c1.g) {
+                            if (c0.x==c1.x && columns.indexOf(c0.x)<0) columns.push(c0.x);
+                            if (c0.y==c1.y && rows.indexOf(c0.y)<0) rows.push(c0.y);
+                            if (c0.g==c1.g && groups.indexOf(c0.g)<0) groups.push(c0.g);
+                            c0.setData(ATTR.DATA.ERROR, CELL_ERROR.DIGIT);
+                            c1.setData(ATTR.DATA.ERROR, CELL_ERROR.DIGIT);
                         }
                     }
                 }
             }
 
             // Highlight groups
+            var groupX=0, groupY=0;
             for (var i=0, j=groups.length; i<j; i++) {
-                var groupIndex = parseInt(groups[i]);
-
-                var groupX = (groupIndex % grid.groupsX) * grid.groupWidth;
-                var groupY = Math.floor(groupIndex / grid.groupsX) * grid.groupHeight;
-
-                for (var x=0, xl=grid.groupWidth; x<xl; x++) {
-                    for (var y=0, yl=grid.groupHeight; y<yl; y++) {
-                        //let checkCell = getCellAt(groupX + x, groupY + y);
-                        var checkCell = elems.cells[(groupY + y) * grid.width + groupX + x];
-                        if (!checkCell.hasAttribute(ATTR.DATA.ERROR)) checkCell.setAttribute(ATTR.DATA.ERROR, CELL_ERROR.CELL);
+                groupX = (groups[i] % grid.groupsX) * grid.groupWidth;
+                groupY = Math.floor(groups[i] / grid.groupsX) * grid.groupHeight;
+                for (var x=groupX, xl=groupX+grid.groupWidth; x<xl; x++) {
+                    for (var y=groupY*grid.width, yl=(groupY+grid.groupHeight)*grid.width; y<yl; y+=grid.width) {
+                        if (!grid.cellData[y+x].hasData(ATTR.DATA.ERROR)) grid.cellData[y+x].setData(ATTR.DATA.ERROR, CELL_ERROR.CELL);
                     }
                 }
             }
 
             // Highlight rows
             for (var i=0, j=rows.length; i<j; i++) {
-                var rowIndex = parseInt(rows[i]);
-                for (var x=0, xl=grid.width; x<xl; x++) {
-                    //let checkCell = getCellAt(x, rowIndex);
-                    var checkCell = elems.cells[rowIndex * grid.width + x];
-                    if (!checkCell.hasAttribute(ATTR.DATA.ERROR)) checkCell.setAttribute(ATTR.DATA.ERROR, CELL_ERROR.CELL);
+                for (var x=rows[i]*grid.width, xl=rows[i]*grid.width+grid.width; x<xl; x++) {
+                    if (!grid.cellData[x].hasData(ATTR.DATA.ERROR)) grid.cellData[x].setData(ATTR.DATA.ERROR, CELL_ERROR.CELL);
                 }
             }
 
-            // Highlight rows
+            // Highlight columns
             for (var i=0, j=columns.length; i<j; i++) {
-                var columnIndex = parseInt(columns[i]);
-                for (var y=0, yl=grid.height; y<yl; y++) {
-                    //let checkCell = getCellAt(columnIndex, y);
-                    var checkCell = elems.cells[y * grid.width + columnIndex];
-                    if (!checkCell.hasAttribute(ATTR.DATA.ERROR)) checkCell.setAttribute(ATTR.DATA.ERROR, CELL_ERROR.CELL);
+                for (var y=columns[i], yl=columns[i]+grid.width*grid.height; y<yl; y+=grid.width) {
+                    if (!grid.cellData[y].hasData(ATTR.DATA.ERROR)) grid.cellData[y].setData(ATTR.DATA.ERROR, CELL_ERROR.CELL);
                 }
             }
 
-            //console.log("NUMBER OF CONFLICTING CELLS: " + cellsConflicting.length);
-
-            for (var i=0, j=grid.possibleValues.length; i<j; i++) {
-                var checkValue = grid.possibleValues[i];
-                var gridIndexes = [];
-                var errorNums = [];
-                document.querySelectorAll('[' + ATTR.DATA.CELL_VALUE + '="' + String(checkValue) + '"]').forEach((value, key, parent) => {
-                    var tempGridIndex = value.getAttribute(ATTR.DATA.CELL_GROUP_INDEX);
-                    if (value.getAttribute(ATTR.DATA.CELL_STATE) != CELL_STATE.PENCIL) {
-                        if (gridIndexes.indexOf(tempGridIndex) < 0) gridIndexes.push(tempGridIndex);
-                        if (value.hasAttribute("data-sudoku-cell-error") && value.getAttribute("data-sudoku-cell-error") == "digit") errorNums.push(value);
-                    }
-                });
-                if (gridIndexes.length > grid.groupsTotal-1 && errorNums.length == 0) {
-                    elems.containerBottomElems.bottom.buttons[grid.possibleValues.indexOf(checkValue)].setAttribute("data-sudoku-button-state", "disabled");
-                } else {
-                    elems.containerBottomElems.bottom.buttons[grid.possibleValues.indexOf(checkValue)].removeAttribute("data-sudoku-button-state");
+            var gridIndexes=[], errorNums=[];
+            for (var cells of checkCells.values()) {
+                if (cells.length == 0) continue;
+                gridIndexes.length = 0;
+                errorNums.length = 0;
+                for (var i=0, j=cells.length; i<j; i++) {
+                    if (gridIndexes.indexOf(cells[i].g) < 0) gridIndexes.push(cells[i].g);
+                    if (cells[i].getData(ATTR.DATA.ERROR) == CELL_ERROR.DIGIT) errorNums.push(cells[i]);
                 }
+                if (gridIndexes.length > grid.groupsTotal-1 && errorNums.length == 0) {
+                    elems.containerBottomElems.bottom.buttons[grid.possibleValues.indexOf(cells[0].value)].setAttribute(ATTR.DATA.BUTTON_STATE, BUTTON_STATE.DISABLED);
+                } else elems.containerBottomElems.bottom.buttons[grid.possibleValues.indexOf(cells[0].value)].removeAttribute(ATTR.DATA.BUTTON_STATE);
             }
         }
 
@@ -828,13 +869,8 @@ var sudoku = function () {
         var historyCurrentIndex = -1;
         var history = [];
 
-        function reset () {
-            history = [];
-            historyCurrentIndex = -1;
-        }
-
+        function reset () { history = []; historyCurrentIndex = -1; }
         function getCurrent () { return historyCurrentIndex > -1 ? history[historyCurrentIndex+1] : null; }
-
         function add (cells, valuesBefore, valuesAfter, typesBefore, typesAfter) {
             var historyArray = [];
 
@@ -846,34 +882,28 @@ var sudoku = function () {
 
             for (var i=0, j=cells.length; i<j; i++) {
                 if (valuesBefore[i] == valuesAfter[i] && typesBefore[i] == typesAfter[i]) continue;
-                historyArray.push({cell: cells[i], valueBefore: valuesBefore[i], valueAfter: valuesAfter[i], typeBefore: typesBefore[i], typeAfter: typesAfter[i]});
+                historyArray.push({cell:cells[i], valueBefore:valuesBefore[i], valueAfter:valuesAfter[i], typeBefore:typesBefore[i], typeAfter:typesAfter[i]});
             }
 
-            if (history.length != 0 && historyCurrentIndex < history.length - 1) {
-                history.splice(historyCurrentIndex + 1, history.length - historyCurrentIndex - 1);
-            }
-
+            if (history.length > historyCurrentIndex+1) history.length = historyCurrentIndex+1;
             history.push(historyArray);
-            historyCurrentIndex = history.length - 1;
+            historyCurrentIndex++;
         }
 
         function undo () {
-            if (historyCurrentIndex == -1) return;
-            
+            if (historyCurrentIndex < 0) return;
             var action = history[historyCurrentIndex];
+            historyCurrentIndex--;
             for(var i=0, j=action.length; i<j; i++) {
                 actions.setCellValue(action[i].cell, action[i].valueBefore, false, false, action[i].typeBefore);
             }
-            historyCurrentIndex--;
         }
 
         function redo () {
-            if (historyCurrentIndex == history.length - 1) return;
-
-            var action = history[historyCurrentIndex + 1];
-
+            if (historyCurrentIndex == history.length-1) return;
             historyCurrentIndex++;
-            for (let i=0, j=action.length; i<j; i++) {
+            var action = history[historyCurrentIndex];
+            for (var i=0, j=action.length; i<j; i++) {
                 actions.setCellValue(action[i].cell, action[i].valueAfter, false, false, action[i].typeAfter);
             }
         }
@@ -888,24 +918,35 @@ var sudoku = function () {
     var solver = function () {
 
         function solve () {
+
+            if (grid.puzzleData != null) {
+                if (!allowSolve) return;
+                for (var i=0, j=grid.puzzleData.puzzle.length; i<j; i++) {
+                    if (grid.puzzleData.puzzle[i] != grid.emptyValue && grid.cellData[i].value == grid.puzzleData.solution[i]) continue;
+                    actions.setCellValue(grid.cellData[i], grid.puzzleData.solution[i], false, false, CELL_STATE.NORMAL);
+                }
+                return;
+            }
+
             // Construct solve grid structure
             var gridArray = []
-            for (var i=0, j=elems.cells.length; i<j; i++) {
+            for (var cellData of grid.cellMap.values()) {
                 var cellStructure = {};
-                cellStructure.cell = elems.cells[i];
-                cellStructure.value = elems.cells[i].getAttribute(ATTR.DATA.CELL_VALUE);
+                cellStructure.cellData = cellData;
+                cellStructure.cell = cellData.cell;
+                cellStructure.value = cellData.state == CELL_STATE.PENCIL ? grid.emptyValue : cellData.value;
                 cellStructure.possible = [];
-                cellStructure.x = parseInt(cellStructure.cell.getAttribute(ATTR.DATA.CELL_X));
-                cellStructure.y = parseInt(cellStructure.cell.getAttribute(ATTR.DATA.CELL_Y));
-                cellStructure.groupIndex = parseInt(cellStructure.cell.getAttribute(ATTR.DATA.CELL_GROUP_INDEX));
-                cellStructure.type = cellStructure.cell.getAttribute(ATTR.DATA.CELL_STATE);
+                cellStructure.x = cellData.x;
+                cellStructure.y = cellData.y;
+                cellStructure.groupIndex = cellData.g;
+                cellStructure.type = cellData.state;
                 gridArray.push(cellStructure);
             }
 
             // Fill possible numbers
             for (var i=0, j=gridArray.length; i<j; i++) {
                 var checkCell = gridArray[i];
-                if (checkCell.type == CELL_STATE.CLUE || checkCell.value != 0) continue;
+                if (checkCell.type == CELL_STATE.CLUE || checkCell.value != grid.emptyValue) continue;
                 checkCell.possible = solveGetAllowedValues(gridArray, i);
             }
 
@@ -917,7 +958,7 @@ var sudoku = function () {
 
                     var checkCell = gridArray[i];
 
-                    if (checkCell.value == 0 && checkCell.possible.length == 1) {
+                    if (checkCell.value == grid.emptyValue && checkCell.possible.length == 1) {
                         checkCell.value = checkCell.possible[0];
                         checkCell.possible = [];
                         solveUpdateAllowedValues(gridArray, i);
@@ -946,14 +987,14 @@ var sudoku = function () {
             // Fill solved grid
             for (var i=0, j=gridArray.length; i<j; i++) {
                 if (gridArray[i].type == CELL_STATE.CLUE) continue;
-                actions.setCellValue(gridArray[i].cell, gridArray[i].value, false, false, CELL_STATE.NORMAL);
+                actions.setCellValue(gridArray[i].cellData, gridArray[i].value, false, false, CELL_STATE.NORMAL);
             }
         }
 
-        function allCellsFilled (grid) {
-            for (var x=0, xl=grid.length; x<xl; x++) {
-                if (grid[x].type == CELL_STATE.CLUE) continue;
-                if (grid[x].possible.length > 0) return false;
+        function allCellsFilled (checkGrid) {
+            for (var i=0, j=checkGrid.length; i<j; i++) {
+                if (checkGrid[i].type == CELL_STATE.CLUE) continue;
+                if (checkGrid[i].possible.length > 0) return false;
             }
             return true;
         }
@@ -1204,14 +1245,13 @@ var sudoku = function () {
         function newPuzzle (numsToRemove=50) {
 
             // Prepare grid
-            var workingGrid = uniqueFilled();
-            var tempGrid = workingGrid.slice(0);
+            var solution = uniqueFilled();
+            var tempGrid = solution.slice(0);
 
             var removeGoal = numsToRemove;
             var removeCount = 0;
             var attempts = [];
             var changeData = [];
-            var onBestAttempt = false;
 
             var error = {
                 indexCount : 0,
@@ -1243,7 +1283,7 @@ var sudoku = function () {
                             changeData = attempts[0];
                             for (var i=0, j=attempts.length; i<j; i++) if (changeData.length < attempts[i].length) changeData = attempts[i];
                             if (changeData.length < removeGoal-10 || changeData.length == 0) {
-                                tempGrid = workingGrid.slice(0);
+                                tempGrid = solution.slice(0);
                                 attempts = [];
                                 changeData = [];
                                 removeCount = 0;
@@ -1251,7 +1291,7 @@ var sudoku = function () {
                                 error.indexCount = 0;
                             } else break;
                         } else {
-                            tempGrid = workingGrid.slice(0);
+                            tempGrid = solution.slice(0);
                             attempts.push(changeData);
                             changeData = [];
                             removeCount = 0;
@@ -1264,9 +1304,10 @@ var sudoku = function () {
                 }
             }
 
-            for (var i=0, j=changeData.length; i<j; i++) workingGrid[changeData[i].index] = grid.emptyValue;
+            tempGrid = solution.slice(0);
+            for (var i=0, j=changeData.length; i<j; i++) tempGrid[changeData[i].index] = grid.emptyValue;
             console.log(`Initializing best puzzle of ${changeData.length}/${removeGoal} removed digits...`);
-            initPuzzle(workingGrid);
+            return {solution:solution, puzzle:tempGrid};
         }
 
         function hasSingleUniqueSolution (checkGrid) {
@@ -1394,7 +1435,7 @@ var sudoku = function () {
     
             // Root
             this.root = buildElement('div', ATTR.ID.ROOT, null, null, null, this.docRoot);
-            if (!debugging || true) this.root.oncontextmenu = (e) => { return false; }
+            if (!debugging || true) this.root.oncontextmenu = (e) => false;
             this.root.addEventListener('pointerover', (e) => { input.mouseOverRoot = true; });
             this.root.addEventListener('pointerout', (e) => { input.mouseOverRoot = false; });
     
@@ -1426,11 +1467,11 @@ var sudoku = function () {
             // Action buttons
             this.containerTopElems.bottom.buttonContainer = buildElement('span', ATTR.ID.BTN_CONTAINER_CORE, null, null, null, this.containerTopElems.bottomContainer);
             this.containerTopElems.bottom.buttons = {};
-            this.containerTopElems.bottom.buttons.newSample = buildButton('button', ATTR.ID.BTN_NEW_SAMPLE, ATTR.CLASS.BTNS_CORE, "New Sample", (e) => { initPuzzle(samplePuzzles.easy[0]); }, this.containerTopElems.bottom.buttonContainer);
-            this.containerTopElems.bottom.buttons.reset = buildButton('button', ATTR.ID.BTN_RESET, ATTR.CLASS.BTNS_CORE, "Reset", (e) => { reset(); }, this.containerTopElems.bottom.buttonContainer);
+            this.containerTopElems.bottom.buttons.createPuzzle = buildButton('button', ATTR.ID.BTN_CREATE_PUZZLE, ATTR.CLASS.BTNS_CORE, "New Puzzle", (e) => { initPuzzle(true); }, this.containerTopElems.bottom.buttonContainer);
+            this.containerTopElems.bottom.buttons.restart = buildButton('button', ATTR.ID.BTN_RESTART, ATTR.CLASS.BTNS_CORE, "Restart", (e) => { restart(); }, this.containerTopElems.bottom.buttonContainer);
             this.containerTopElems.bottom.buttons.solve = buildButton('button', ATTR.ID.BTN_SOLVE, ATTR.CLASS.BTNS_CORE, "Solve", (e) => { solver.solve(); }, this.containerTopElems.bottom.buttonContainer);
-            this.containerTopElems.bottom.buttons.createPuzzle = buildButton('button', ATTR.ID.BTN_CREATE_PUZZLE, ATTR.CLASS.BTNS_CORE, "Create Puzzle", (e) => { generate.newPuzzle(); }, this.containerTopElems.bottom.buttonContainer);
-        
+            this.containerTopElems.bottom.buttons.clear = buildButton('button', ATTR.ID.BTN_CLEAR, ATTR.CLASS.BTNS_CORE, "Clear", (e) => { reset(true); }, this.containerTopElems.bottom.buttonContainer);
+
             // Clock
             this.containerTopElems.bottom.clockContainer = buildElement('span', ATTR.ID.CLOCK_ROOT, null, null, null, this.containerTopElems.bottomContainer);
             clockInit(this.containerTopElems.bottom.clockContainer, false);
@@ -1489,7 +1530,7 @@ var sudoku = function () {
             this.containerBottomElems.top.buttons.redo = buildButtonAction(ATTR.ID.BTN_REDO, ATTR.CLASS.BTNS_ACTIONS, ATTR.SRC.SVG.REDO, "Redo", (e) => { log.redo(); }, this.containerBottomElems.top.buttonContainer);
             this.containerBottomElems.top.buttons.eraser = buildButtonAction(ATTR.ID.BTN_ERASER, ATTR.CLASS.BTNS_ACTIONS, ATTR.SRC.SVG.ERASER, "Delete", (e) => { actions.deleteDigit(true, true); }, this.containerBottomElems.top.buttonContainer);
             this.containerBottomElems.top.buttons.pen = buildButtonAction(ATTR.ID.BTN_PEN, ATTR.CLASS.BTNS_ACTIONS, ATTR.SRC.SVG.PEN_OFF, "Pencil", (e) => { pencil.toggle(); }, this.containerBottomElems.top.buttonContainer);
-            this.containerBottomElems.top.buttons.hint = buildButtonAction(ATTR.ID.BTN_HINT, ATTR.CLASS.BTNS_ACTIONS, ATTR.SRC.SVG.HINT, "Hint", (e) => { /** Hint action... */}, this.containerBottomElems.top.buttonContainer);
+            this.containerBottomElems.top.buttons.hint = buildButtonAction(ATTR.ID.BTN_HINT, ATTR.CLASS.BTNS_ACTIONS, ATTR.SRC.SVG.HINT, "Hint", (e) => { hints.reveal(); }, this.containerBottomElems.top.buttonContainer);
             
             // Value buttons
             this.containerBottomElems.bottom.buttons = [];
@@ -1597,24 +1638,19 @@ var sudoku = function () {
     }();
 
     function removeAllAttributesFromAll () {
-        for (let i=0, j=elems.cells.length; i<j; i++) {
-            elems.cells[i].removeAttribute(ATTR.DATA.HIGHLIGHT);
-            elems.cells[i].removeAttribute(ATTR.DATA.DIGIT_HIGHLIGHT);
-            elems.cells[i].setAttribute(ATTR.DATA.CELL_STATE, CELL_STATE.NORMAL);
-            elems.cells[i].removeAttribute(ATTR.DATA.ERROR);
-        }
+        grid.cellMap.forEach((cellData, key, map) => {
+            cellData.removeData(ATTR.DATA.HIGHLIGHT);
+            cellData.removeData(ATTR.DATA.DIGIT_HIGHLIGHT);
+            cellData.removeData(ATTR.DATA.ERROR);
+            cellData.state = CELL_STATE.NORMAL;
+        });
     }
 
     function checkIfSolvedPuzzle () {
-        for (var i=0, j=elems.cells.length; i<j; i++) {
-            var cellType = elems.cells[i].getAttribute(ATTR.DATA.CELL_STATE);
-            if (cellType == CELL_STATE.PENCIL || elems.cells[i].getAttribute(ATTR.DATA.CELL_VALUE) == grid.emptyValue) return;
+        for (var cellData of grid.cellMap.values()) {
+            if (cellData.state == CELL_STATE.PENCIL || cellData.value == grid.emptyValue || cellData.hasData(ATTR.DATA.ERROR)) return;
         }
-
-        if (document.querySelectorAll(`[${ATTR.DATA.ERROR}]`).length > 0) return;
-
         clock.stop();
-
         alert("You won!");
     }
 

@@ -70,6 +70,7 @@ html {
 body {
     margin: 0;
     background-color: var(--color-background);
+    -webkit-tap-highlight-color:transparent;
 }
 
 #sudoku-root {
@@ -467,17 +468,15 @@ body {
     outline: none;
     border: none;
     text-decoration: none;
-    justify-content: center;
-    align-items: center;
     color: var(--color-grid);
     cursor: pointer;
     opacity: 0.7;
-    transition: opacity 0.3s ease-in-out, background-color 0.3s ease-in-out;
+    transition: opacity 0.1s ease-in, background-color 0.1s ease-in;
     background-color: var(--color-background);
     border-radius: 4px;
 }
 
-#sudoku-root #sudoku-container-top #sudoku-container-top-bottom #sudoku-button-container-core button:hover {
-    opacity: 0.9;
-    background-color: rgb(226, 226, 226);
+#sudoku-root #sudoku-container-top #sudoku-container-top-bottom #sudoku-button-container-core button:active {
+    opacity: 1.0;
+    background-color: var(--color-04);
 }
