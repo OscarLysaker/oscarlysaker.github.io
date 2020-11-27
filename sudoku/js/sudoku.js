@@ -497,7 +497,7 @@ var sudoku = function () {
 
                         var checkCellNewInnerText = String(checkCellValue).replace(String(tempNewValue), "");
 
-                        if (checkCellNewInnerText == "") {
+                        if (String(checkCellNewInnerText).length == 0) {
                             newValues.push(grid.emptyValue);
                             newTypes.push(CELL_STATE.NORMAL);
 
@@ -507,11 +507,11 @@ var sudoku = function () {
                             newValues.push(parseInt(checkCellNewInnerText));
                             newTypes.push(CELL_STATE.PENCIL);
 
-                            checkCells[ii].value = parseInt(checkCellNewInnerText);
+                            checkCells[ii].value = checkCellNewInnerText;
                             checkCells[ii].state = CELL_STATE.PENCIL;
                         }
 
-                        checkCells[ii].innerText = checkCellNewInnerText;
+                        checkCells[ii].cell.innerText = checkCellNewInnerText;
                     }
                 }
             }
