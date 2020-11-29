@@ -1,19 +1,5 @@
 var sudoku = function () {
 
-    var samplePuzzles = {
-        "easy" : [
-            ["0","6","0","0","8","0","4","2","0",
-             "0","1","5","0","6","0","3","7","8",
-             "0","0","0","4","0","0","0","6","0",
-             "1","0","0","6","0","4","8","3","0",
-             "3","0","6","0","1","0","7","0","5",
-             "0","8","0","3","5","0","0","0","0",
-             "8","3","0","9","4","0","0","0","0",
-             "0","7","2","1","3","0","9","0","0",
-             "0","0","9","0","2","0","6","1","0"]
-        ]
-    }
-
     var CELL_STATE = {
         NORMAL : 'normal',
         CLUE : 'clue',
@@ -282,18 +268,18 @@ var sudoku = function () {
         elems.containerBottomElems.top.buttons.hint.root.removeAttribute(ATTR.DATA.BUTTON_STATE);
         while (cellTimeouts.length > 0) clearTimeout(cellTimeouts.splice(0,1)[0]);
 
-        grid.cellMap.forEach((cellData, key, map) => { cellData.removeData("data-sudoku-cell-start-anim"); });
+        grid.cellData.forEach((cellData) => { cellData.removeData("data-sudoku-cell-start-anim"); });
 
         var animOffset = 4;
         var animTotal = 4 * 81 + 400;
         cellTimeouts.push(
             setTimeout(function () {
-                grid.cellMap.forEach((cellData, key, map) => { cellData.removeData("data-sudoku-cell-start-anim"); });
+                grid.cellData.forEach((cellData) => { cellData.removeData("data-sudoku-cell-start-anim"); });
                 state.start();
                 console.log("Started clock...");
             }, animTotal)
         );
-        for (var cellData of grid.cellMap.values()) {
+        for (var [index, cellData] of grid.cellData.entries()) {
             (function (cellData, value, state, timeout) {
                 cellTimeouts.push(
                     setTimeout(function () {
@@ -357,7 +343,7 @@ var sudoku = function () {
 
         function revealRandom () {
             var unresolved = [];
-            for (var cellData of grid.cellMap.values()) {
+            for (var [index, cellData] of grid.cellData.entries()) {
                 if (cellData.state != CELL_STATE.PENCIL && cellData.value != grid.emptyValue) unresolved.push(cellData);
             }
             if (unresolved.length == 0) return;
@@ -377,30 +363,6 @@ var sudoku = function () {
     //  +-------------------+
 
     var actions = function () {
-
-        function getCellGroup (gIndex) {
-            var groupX = (gIndex % grid.groupsX) * grid.groupWidth;
-            var groupY = Math.floor(gIndex / grid.groupsX) * grid.groupHeight;
-            var result = [];
-
-            for (var x=0, xl=grid.groupWidth; x<xl; x++) for (y=0, yl=grid.groupHeight; y<yl; y++) {
-                result.push(grid.cellMap.get(grid.cells[(groupY + y) * grid.width + groupX + x]));
-            }
-
-            return result;
-        }
-
-        function getCellRow (yIndex) {
-            var result = [];
-            for (var i=0, j=grid.width; i<j; i++) result.push(grid.cellMap.get(grid.cells[yIndex * grid.width + i]));
-            return result;
-        }
-
-        function getCellColumn (xIndex) {
-            var result = [];
-            for (var i=0, j=grid.height; i<j; i++) result.push(grid.cellMap.get(grid.cells[i * grid.width + xIndex]));
-            return result;
-        }
 
         function deleteDigit (playerInput=false, logAction=false) {
             if (selection.cells.length == 0) return;
@@ -546,20 +508,19 @@ var sudoku = function () {
             highlights.remove();
         }
 
-        function select (cell, add=false) {
-            cell = grid.cellMap.get(cell);
+        function select (cellData, add=false) {
             if (add) {
                 if (cells.length == 1) {
                     highlights.remove();
                     cells[0].setData(ATTR.DATA.SELECTED, SELECTION.MULTI);
                 }
-                if (cells.indexOf(cell) >= 0) return;
-                cell.setData(ATTR.DATA.SELECTED, SELECTION.MULTI);
-                cells.push(cell);
+                if (cells.indexOf(cellData) >= 0) return;
+                cellData.setData(ATTR.DATA.SELECTED, SELECTION.MULTI);
+                cells.push(cellData);
             } else {
                 remove();
-                cell.setData(ATTR.DATA.SELECTED, SELECTION.SINGLE);
-                cells.push(cell);
+                cellData.setData(ATTR.DATA.SELECTED, SELECTION.SINGLE);
+                cells.push(cellData);
                 highlights.forSelected();
                 highlights.updatePencil();
             }
@@ -609,8 +570,8 @@ var sudoku = function () {
             cell = grid.cellData[ny * grid.width + nx];
             cell.setData(ATTR.DATA.ARROW_HIGHLIGHT, "");
 
-            if (selection.cells.length >= 0 && KEY_DOWN.SHIFT) selection.select(cell.cell, true);
-            else selection.select(cell.cell);
+            if (selection.cells.length >= 0 && KEY_DOWN.SHIFT) selection.select(cell, true);
+            else selection.select(cell);
         }
 
         return {cell:cell, move:move, remove:remove};
@@ -683,21 +644,23 @@ var sudoku = function () {
             selection.dragFirstCell = null;
         }
 
-        function onOverCell (cell) {
-            if (!selection.dragging && selection.dragFirstCell != cell && pointerDown) {
+        function onOverCell (x, y) {
+            var cellData = grid.cellData[y*grid.width+x];
+            if (!selection.dragging && selection.dragFirstCell != cellData && pointerDown) {
                 selection.dragging = true;
                 selection.dragFirstCell = null;
-                selection.select(cell, true);
+                selection.select(cellData, true);
             } else if (selection.dragging) {
-                selection.select(cell, true);
+                selection.select(cellData, true);
             }
         }
 
-        function onPointerDown (cell) {
+        function onPointerDown (x, y) {
+            var cellData = grid.cellData[y*grid.width+x];
             pointerDown = true;
             arrow.remove();
-            selection.select(cell);
-            selection.dragFirstCell = cell;
+            selection.select(cellData);
+            selection.dragFirstCell = cellData;
         }
 
         return {addEvent:addEvent, onOverCell:onOverCell, onPointerDown:onPointerDown, mouseOverRoot:mouseOverRoot};
@@ -731,7 +694,7 @@ var sudoku = function () {
     var highlights = function () {
 
         function remove () {
-            for (var cellData of grid.cellMap.values()) {
+            for (var [index, cellData] of grid.cellData.entries()) {
                 cellData.removeData(ATTR.DATA.HIGHLIGHT);
                 cellData.removeData(ATTR.DATA.DIGIT_HIGHLIGHT);
             }
@@ -740,12 +703,12 @@ var sudoku = function () {
         function updatePencil () {
 
             // Reset pencil cells
-            for (var cellData of grid.cellMap.values()) if (cellData.state == CELL_STATE.PENCIL) cellData.cell.innerText = cellData.value;
+            for (var [index, cellData] of grid.cellData.entries()) if (cellData.state == CELL_STATE.PENCIL) cellData.cell.innerText = cellData.value;
 
             // Update highlights
             if (selection.cells.length == 1 && (selection.cells[0].state != CELL_STATE.NORMAL && selection.cells[0].state != CELL_STATE.CLUE)) return;
             if (selection.cells[0] == undefined) return;
-            for (var cellData of grid.cellMap.values()) {
+            for (var [index, cellData] of grid.cellData.entries()) {
                 if (cellData.state != CELL_STATE.PENCIL) continue;
                 var cellValue = "" + String(cellData.value);
                 var selectedValue = "" + String(selection.cells[0].value);
@@ -800,7 +763,7 @@ var sudoku = function () {
 
             // Highlight digits
             if (cellData.value != grid.emptyValue && cellData.state != CELL_STATE.PENCIL) {
-                for (var cd of grid.cellMap.values()) {
+                for (var [i, cd] of grid.cellData.entries()) {
                     if (cd == cellData || cd.state == CELL_STATE.PENCIL) continue;
                     if (cd.value == cellData.value) cd.setData(ATTR.DATA.DIGIT_HIGHLIGHT, "");
                 }
@@ -809,14 +772,14 @@ var sudoku = function () {
 
         function updateError () {
 
-            for (var cellData of grid.cellMap.values()) if (cellData.hasData(ATTR.DATA.ERROR)) cellData.removeData(ATTR.DATA.ERROR);
+            for (var [index, cellData] of grid.cellData.entries()) if (cellData.hasData(ATTR.DATA.ERROR)) cellData.removeData(ATTR.DATA.ERROR);
 
             var groups=[], rows=[], columns=[];
 
             // Check conflicting cells
             var checkCells = new Map();
             for (var i=0, j=grid.possibleValues.length; i<j; i++) checkCells.set(grid.possibleValues[i], []);
-            for (var cellData of grid.cellMap.values()) {
+            for (var [index, cellData] of grid.cellData.entries()) {
                 if (cellData.value != grid.emptyValue && cellData.value.length == 1 && cellData.state != CELL_STATE.PENCIL) checkCells.get(cellData.value).push(cellData);
             }
             for (var cells of checkCells.values()) {
@@ -948,7 +911,7 @@ var sudoku = function () {
 
             // Construct solve grid structure
             var gridArray = []
-            for (var cellData of grid.cellMap.values()) {
+            for (var [index, cellData] of grid.cellData.entries()) {
                 var cellStructure = {};
                 cellStructure.cellData = cellData;
                 cellStructure.cell = cellData.cell;
@@ -1800,23 +1763,23 @@ var sudoku = function () {
             if (x % grid.groupWidth == grid.groupWidth - 1 && x != grid.width - 1) td.setAttribute(STYLE_ATTR.CELL_BORDER_RIGHT, "");
             if (y % grid.groupHeight == grid.groupHeight - 1 && y != grid.height - 1) td.setAttribute(STYLE_ATTR.CELL_BORDER_BOTTOM, "");
     
-            (function (cell, onPointerDown, onOverCell) {
+            (function (cell, x, y, onPointerDown, onOverCell) {
                 if (!isTouch) {
                     cell.addEventListener('pointerdown', (e) => {
                         e.preventDefault();
-                        onPointerDown(cell);
+                        onPointerDown(x, y);
                     });
                     cell.addEventListener('pointerover', (e) => {
                         e.preventDefault();
-                        onOverCell(cell);
+                        onOverCell(x, y);
                     });
                 } else {
                     cell.addEventListener('touchstart', (e) => {
                         e.preventDefault();
-                        onPointerDown(cell);
+                        onPointerDown(x, y);
                     });
                 }
-            })(td, input.onPointerDown, input.onOverCell);
+            })(td, x, y, input.onPointerDown, input.onOverCell);
     
             parentRow.append(td);
             return td;
@@ -1828,16 +1791,17 @@ var sudoku = function () {
     }();
 
     function removeAllAttributesFromAll () {
-        grid.cellMap.forEach((cellData, key, map) => {
+        grid.cellData.forEach((cellData) => {
             cellData.removeData(ATTR.DATA.HIGHLIGHT);
             cellData.removeData(ATTR.DATA.DIGIT_HIGHLIGHT);
             cellData.removeData(ATTR.DATA.ERROR);
             cellData.state = CELL_STATE.NORMAL;
+            cellData.removeData(ATTR.DATA.CHECK);
         });
     }
 
     function checkIfSolvedPuzzle () {
-        for (var cellData of grid.cellMap.values()) {
+        for (var [index, cellData] of grid.cellData.entries()) {
             if (cellData.state == CELL_STATE.PENCIL || cellData.value == grid.emptyValue || cellData.hasData(ATTR.DATA.ERROR)) return;
         }
         state.stop();
