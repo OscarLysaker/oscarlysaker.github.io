@@ -31,6 +31,10 @@ var sudoku = function () {
         CTRL : false
     };
 
+    var CELL_CHECK = {
+        ERROR : 'error'
+    }
+
     var STYLE_ATTR = {
         CELL_BORDER_RIGHT : 'data-sudoku-cell-border-right',
         CELL_BORDER_BOTTOM : 'data-sudoku-cell-border-bottom'
@@ -113,7 +117,8 @@ var sudoku = function () {
             BUTTON_STATE : 'data-button-state',
 
             ERROR : 'data-sudoku-error',
-            SELECTED : 'data-sudoku-cell-selected'
+            SELECTED : 'data-sudoku-cell-selected',
+            CHECK : 'data-sudoku-check'
         }
     }
 
@@ -158,7 +163,7 @@ var sudoku = function () {
         });
         Object.defineProperty(this, 'value', {
             get () { return _value; },
-            set (v) { this.cell.setAttribute(ATTR.DATA.CELL_VALUE, v); return _value = v; }
+            set (v) { this.cell.setAttribute(ATTR.DATA.CELL_VALUE, v); this.cell.innerText = v == grid.emptyValue ? "" : v; return _value = v; }
         });
 
         this.removeData = (dataAttr) => { if (_data.delete(dataAttr)) this.cell.removeAttribute(dataAttr); }
@@ -207,8 +212,16 @@ var sudoku = function () {
         this.cells = [];
         this.cellMap = new Map();
         this.cellData = [];
+        this.cellRow = [];
+        this.cellColumn = [];
+        this.cellGroup = [];
         this.setCells = (cellArray) => {
             this.cells.length = 0;
+            this.cellMap = new Map();
+            this.cellData.length = 0;
+            this.cellRow.length = 0;
+            this.cellColumn.length = 0;
+            this.cellGroup.length = 0;
             for (var i=0, j=cellArray.length; i<j; i++) {
                 var x = Number(cellArray[i].getAttribute(ATTR.DATA.CELL_X));
                 var y = Number(cellArray[i].getAttribute(ATTR.DATA.CELL_Y));
@@ -218,6 +231,12 @@ var sudoku = function () {
                 this.cells.push(cellArray[i]);
                 this.cellMap.set(cellArray[i], new CellData(cellArray[i], i, x, y, g, s, v));
                 this.cellData.push(this.cellMap.get(cellArray[i]));
+                while (this.cellRow.length < y+1) this.cellRow.push([]);
+                while (this.cellColumn.length < x+1) this.cellColumn.push([]);
+                while (this.cellGroup.length < g+1) this.cellGroup.push([]);
+                this.cellRow[y].push(this.cellData[i]);
+                this.cellColumn[x].push(this.cellData[i]);
+                this.cellGroup[g].push(this.cellData[i]);
             }
         }
         this.puzzleData = null;
@@ -243,7 +262,7 @@ var sudoku = function () {
         for (var i=0, j=elems.containerBottomElems.bottom.buttons.length; i<j; i++) {
             elems.containerBottomElems.bottom.buttons[i].removeAttribute("data-sudoku-button-state", "disabled");
         }
-        clock.reset();
+        state.reset();
         actions.setCellValue(grid.cellData, grid.emptyValue, false, false, CELL_STATE.NORMAL);
         removeAllAttributesFromAll();
         log.reset();
@@ -270,7 +289,7 @@ var sudoku = function () {
         cellTimeouts.push(
             setTimeout(function () {
                 grid.cellMap.forEach((cellData, key, map) => { cellData.removeData("data-sudoku-cell-start-anim"); });
-                clock.start();
+                state.start();
                 console.log("Started clock...");
             }, animTotal)
         );
@@ -393,125 +412,103 @@ var sudoku = function () {
 
             var affectedCells = [];
             var previousValues = [];
-            var previousTypes = [];
-
+            var previousStates = [];
             var newValues = [];
-            var newTypes = [];
+            var newStates = [];
 
             // New values
-            var newType = forcedType;
-
-            if (pencil.active && playerInput && value == grid.emptyValue) newType = CELL_STATE.NORMAL;
-            else if (pencil.active && playerInput) newType = CELL_STATE.PENCIL;
-            else if (value != grid.emptyValue && !playerInput && forcedType != CELL_STATE.PENCIL && forcedType != CELL_STATE.CLUE) newType = CELL_STATE.NORMAL;
-            else if (value != grid.emptyValue && playerInput && !pencil.active) newType = CELL_STATE.NORMAL;
+            var newState = forcedType;
             var newValue = value;
-            var newInnerText = value;
-            if (newValue == grid.emptyValue) newInnerText = "";
 
-            for (var i=0, j=cells.length; i<j; i++) {
-                var cellData = cells[i];
-                var cell = cellData.cell;
+            if (pencil.active && playerInput && value != grid.emptyValue) newState = CELL_STATE.PENCIL;
+            else if (value != grid.emptyValue && !playerInput && forcedType != CELL_STATE.PENCIL && forcedType != CELL_STATE.CLUE) newState = CELL_STATE.NORMAL;
+            else if (value != grid.emptyValue && playerInput && !pencil.active) newState = CELL_STATE.NORMAL;
+
+            for (var [index, cellData] of cells.entries()) {
 
                 // Clue cells can't be manipulated by player, skip
                 if (cellData.state == CELL_STATE.CLUE && playerInput) continue;
 
-                // Temp values prone for manipulation
-                var tempNewType = newType;
-                var tempNewValue = newValue;
-                var tempNewInnerText = newInnerText;
+                // Store affected and previous values
+                affectedCells.push(cellData);
+                previousValues.push(cellData.value);
+                previousStates.push(cellData.state);
 
-                // Current values
-                var currentType = cellData.state;
-                var currentValue = cellData.value;
+                // Temp values prone for manipulation
+                var tempNewState = newState;
+                var tempNewValue = newValue;
 
                 // If value is 0 or previous value, delete value
-                if (tempNewValue == grid.emptyValue || (tempNewValue == currentValue && currentType == tempNewType)) {
-                    tempNewType = CELL_STATE.NORMAL;
-                    tempNewInnerText = "";
+                if (tempNewValue == grid.emptyValue || (tempNewValue == cellData.value && cellData.state == tempNewState)) {
+                    tempNewState = CELL_STATE.NORMAL;
                     tempNewValue = grid.emptyValue;
                 } else {
                     // Check pencil
-                    if (tempNewType == CELL_STATE.PENCIL && String(tempNewValue).length > 1) {
-                        console.log("Changing to multivalue of PENCIL cell: " + currentValue + " -> " + tempNewValue);
-                    } else if (tempNewType == CELL_STATE.PENCIL && currentType == CELL_STATE.PENCIL) {
-                        var valueArray = String(currentValue).split("");
+                    if (tempNewState == CELL_STATE.PENCIL && String(tempNewValue).length > 1) {
+                    } else if (tempNewState == CELL_STATE.PENCIL && cellData.state == CELL_STATE.PENCIL) {
+                        var valueArray = String(cellData.value).split("");
                         var canPlaceValue = true;
-                        tempNewInnerText = "";
-                        for (var ii=0, jj=valueArray.length; ii<jj; ii++) {
-                            var checkValue = valueArray[ii];
+                        var tempText = "";
+                        for (var i=0, j=valueArray.length; i<j; i++) {
+                            var checkValue = valueArray[i];
                             if (checkValue == tempNewValue) {
                                 canPlaceValue = false;
                                 continue;
                             }
-                            if (checkValue > tempNewValue && canPlaceValue) {
-                                tempNewInnerText += String(tempNewValue);
+                            if (grid.possibleValues.indexOf(checkValue) > grid.possibleValues.indexOf(tempNewValue) && canPlaceValue) {
+                                tempText += String(tempNewValue);
                                 canPlaceValue = false;
                             }
-                            tempNewInnerText += checkValue;
-                            if (ii == valueArray.length - 1 && canPlaceValue) {
-                                tempNewInnerText += String(tempNewValue);
+                            tempText += checkValue;
+                            if (i == valueArray.length - 1 && canPlaceValue) {
+                                tempText += String(tempNewValue);
                             }
                         }
-                        tempNewValue = parseInt(tempNewInnerText);
+                        tempNewValue = tempText;
                     }
                 }
 
-                // Store values
-                affectedCells.push(cellData);
-                previousValues.push(currentValue);
-                previousTypes.push(currentType);
+                // Store and apply new values
                 newValues.push(tempNewValue);
-                newTypes.push(tempNewType);
-
-                // Apply values
-                cellData.cell.innerText = tempNewInnerText;
+                newStates.push(tempNewState);
                 cellData.value = tempNewValue;
-                cellData.state = tempNewType;
+                cellData.state = tempNewState;
+                cellData.removeData(ATTR.DATA.CHECK);
 
                 // If applied number, check if pencils should be removed
-                if (tempNewType == CELL_STATE.NORMAL && playerInput) {
+                if (tempNewState == CELL_STATE.NORMAL && playerInput) {
                     var checkCells = [];
                     
-                    var cellsRow = getCellRow(cellData.y);
-                    var cellsColumn = getCellColumn(cellData.x);
-                    var cellsGroup = getCellGroup(cellData.g);
-
-                    console.log("Captured " + (cellsRow.length + cellsColumn.length + cellsGroup.length) + " cells...");
-
-                    for (var ii=0, jj=cellsRow.length; ii<jj; ii++) {
-                        if (checkCells.indexOf(cellsRow[ii]) < 0 && cellsRow[ii] != cellData && cellsRow[ii].state == CELL_STATE.PENCIL) checkCells.push(cellsRow[ii]);
-                        if (checkCells.indexOf(cellsColumn[ii]) < 0 && cellsColumn[ii] != cellData && cellsColumn[ii].state == CELL_STATE.PENCIL) checkCells.push(cellsColumn[ii]);
-                        if (checkCells.indexOf(cellsGroup[ii]) < 0 && cellsGroup[ii] != cellData && cellsGroup[ii].state == CELL_STATE.PENCIL) checkCells.push(cellsGroup[ii]);
+                    grid.cellRow[cellData.y].forEach(fillCheckCells);
+                    grid.cellColumn[cellData.x].forEach(fillCheckCells);
+                    grid.cellGroup[cellData.g].forEach(fillCheckCells);
+                    
+                    function fillCheckCells (cd) {
+                        if (cd != cellData && cd.state == CELL_STATE.PENCIL && checkCells.indexOf(cd) < 0) checkCells.push(cd);
                     }
 
-                    console.log("Checking " + checkCells.length + " cells...");
-
-                    for (var ii=0, jj=checkCells.length; ii<jj; ii++) {
-                        if (String(checkCells[ii].value).indexOf(String(tempNewValue)) < 0) continue;
-                        var checkCellValue = checkCells[ii].value;
+                    for (var i=0, j=checkCells.length; i<j; i++) {
+                        if (String(checkCells[i].value).indexOf(String(tempNewValue)) < 0) continue;
                         
-                        affectedCells.push(checkCells[ii]);
-                        previousValues.push(checkCellValue);
-                        previousTypes.push(checkCells[ii].state);
+                        affectedCells.push(checkCells[i]);
+                        previousValues.push(checkCells[i].value);
+                        previousStates.push(checkCells[i].state);
 
-                        var checkCellNewInnerText = String(checkCellValue).replace(String(tempNewValue), "");
+                        var valueText = String(checkCells[i].value).replace(String(tempNewValue), "");
 
-                        if (String(checkCellNewInnerText).length == 0) {
+                        if (String(valueText).length == 0) {
                             newValues.push(grid.emptyValue);
-                            newTypes.push(CELL_STATE.NORMAL);
+                            newStates.push(CELL_STATE.NORMAL);
 
-                            checkCells[ii].value = grid.emptyValue;
-                            checkCells[ii].state = CELL_STATE.NORMAL;
+                            checkCells[i].value = grid.emptyValue;
+                            checkCells[i].state = CELL_STATE.NORMAL;
                         } else {
-                            newValues.push(parseInt(checkCellNewInnerText));
-                            newTypes.push(CELL_STATE.PENCIL);
+                            newValues.push(valueText);
+                            newStates.push(CELL_STATE.PENCIL);
 
-                            checkCells[ii].value = checkCellNewInnerText;
-                            checkCells[ii].state = CELL_STATE.PENCIL;
+                            checkCells[i].value = valueText;
+                            checkCells[i].state = CELL_STATE.PENCIL;
                         }
-
-                        checkCells[ii].cell.innerText = checkCellNewInnerText;
                     }
                 }
             }
@@ -523,7 +520,7 @@ var sudoku = function () {
 
             highlights.updateError();
 
-            if (logAction) log.add(affectedCells, previousValues, newValues, previousTypes, newTypes);
+            if (logAction) log.add(affectedCells, previousValues, newValues, previousStates, newStates);
             if (playerInput) checkIfSolvedPuzzle();
         }
 
@@ -539,9 +536,9 @@ var sudoku = function () {
 
     var selection = function () {
 
-        var cells = [];
-        var dragging = false;
-        var dragFirstCell = null;
+        this.cells = [];
+        this.dragging = false;
+        this.dragFirstCell = null;
 
         function remove () {
             cells.forEach((cell) => { cell.removeData(ATTR.DATA.SELECTED); });
@@ -704,6 +701,27 @@ var sudoku = function () {
         }
 
         return {addEvent:addEvent, onOverCell:onOverCell, onPointerDown:onPointerDown, mouseOverRoot:mouseOverRoot};
+    }();
+
+    //  +-------------------+
+    //  |      Checker      |
+    //  +-------------------+
+
+    var checker = function () {
+
+        function check () {
+            if (grid.puzzleData == null) return;
+
+            for (var i=0, j=grid.puzzleData.solution.length; i<j; i++) {
+                if (grid.cellData[i].value != grid.emptyValue && grid.cellData[i].state != CELL_STATE.PENCIL && grid.cellData[i].value != grid.puzzleData.solution[i]) {
+                    grid.cellData[i].setData(ATTR.DATA.CHECK, CELL_CHECK.ERROR);
+                }
+            }
+        }
+
+        return {
+            check:check
+        }
     }();
 
     //  +----------------------+
@@ -871,18 +889,18 @@ var sudoku = function () {
 
         function reset () { history = []; historyCurrentIndex = -1; }
         function getCurrent () { return historyCurrentIndex > -1 ? history[historyCurrentIndex+1] : null; }
-        function add (cells, valuesBefore, valuesAfter, typesBefore, typesAfter) {
+        function add (cells, valuesBefore, valuesAfter, statesBefore, statesAfter) {
             var historyArray = [];
 
             if (!Array.isArray(cells)) cells = [cells];
             if (!Array.isArray(valuesBefore)) valuesBefore = [valuesBefore];
             if (!Array.isArray(valuesAfter)) valuesAfter = [valuesAfter];
-            if (!Array.isArray(typesBefore)) typesBefore = [typesBefore];
-            if (!Array.isArray(typesAfter)) typesAfter = [typesAfter];
+            if (!Array.isArray(statesBefore)) statesBefore = [statesBefore];
+            if (!Array.isArray(statesAfter)) statesAfter = [statesAfter];
 
             for (var i=0, j=cells.length; i<j; i++) {
-                if (valuesBefore[i] == valuesAfter[i] && typesBefore[i] == typesAfter[i]) continue;
-                historyArray.push({cell:cells[i], valueBefore:valuesBefore[i], valueAfter:valuesAfter[i], typeBefore:typesBefore[i], typeAfter:typesAfter[i]});
+                if (valuesBefore[i] == valuesAfter[i] && statesBefore[i] == statesAfter[i]) continue;
+                historyArray.push({cell:cells[i], valueBefore:valuesBefore[i], valueAfter:valuesAfter[i], stateBefore:statesBefore[i], stateAfter:statesAfter[i]});
             }
 
             if (history.length > historyCurrentIndex+1) history.length = historyCurrentIndex+1;
@@ -895,7 +913,7 @@ var sudoku = function () {
             var action = history[historyCurrentIndex];
             historyCurrentIndex--;
             for(var i=0, j=action.length; i<j; i++) {
-                actions.setCellValue(action[i].cell, action[i].valueBefore, false, false, action[i].typeBefore);
+                actions.setCellValue(action[i].cell, action[i].valueBefore, false, false, action[i].stateBefore);
             }
         }
 
@@ -904,7 +922,7 @@ var sudoku = function () {
             historyCurrentIndex++;
             var action = history[historyCurrentIndex];
             for (var i=0, j=action.length; i<j; i++) {
-                actions.setCellValue(action[i].cell, action[i].valueAfter, false, false, action[i].typeAfter);
+                actions.setCellValue(action[i].cell, action[i].valueAfter, false, false, action[i].stateAfter);
             }
         }
 
@@ -1421,6 +1439,175 @@ var sudoku = function () {
         };
     }();
 
+    //  +-----------------+
+    //  |      Clock      |
+    //  +-----------------+
+
+    var clock = function () {
+
+        var root = null;
+        var rootDigits = null;
+        var digitSpans = [];
+        var timeArray = [0,0, 0,0, 0,0];
+        var elapsed = null;
+        var timeout = null;
+        var paused = false;
+        var offsetPaused = 0;
+        var lastTimeStamp = 0;
+
+        function init (docRoot=null, showButtons=false) {
+            if (docRoot == null) return;
+
+            root = docRoot;
+            root.setAttribute("data-clock-root-container", "");
+            
+            rootDigits = document.createElement("div");
+            rootDigits.setAttribute("id", "clock-root-digits");
+            root.append(rootDigits);
+
+            digitSpans.push(getDigitSpan("clock-hours-tens"));
+            digitSpans.push(getDigitSpan("clock-hours-ones"));
+            addDigitSpacer(rootDigits);
+            digitSpans.push(getDigitSpan("clock-minutes-tens"));
+            digitSpans.push(getDigitSpan("clock-minutes-ones"));
+            addDigitSpacer(rootDigits);
+            digitSpans.push(getDigitSpan("clock-seconds-tens"));
+            digitSpans.push(getDigitSpan("clock-seconds-ones"));
+
+            function getDigitSpan (id) {
+                var elem = document.createElement("span");
+                elem.setAttribute("class", "clock-digits");
+                elem.setAttribute("id", id);
+                elem.setAttribute("data-digit-position", "0");
+                for (var i = 0; i < 10; i++) {
+                    var divObj = document.createElement("div");
+                    divObj.innerText = i;
+                    elem.append(divObj);
+                }
+                rootDigits.append(elem);
+                return elem;
+            }
+
+            function addDigitSpacer (root) {
+                var elem = document.createElement("span");
+                elem.setAttribute("class", "clock-digit-spacer");
+                elem.innerText = ":";
+                root.append(elem);
+            }
+
+            var faderElem = document.createElement("div");
+            faderElem.setAttribute("class", "fade");
+            root.append(faderElem);
+
+            // Buttons
+            if (showButtons) {
+                createControlButton("Start", "clock-button-start", () => { start(); });
+                createControlButton("Pause", "clock-button-pause", () => { pause(); });
+                createControlButton("Reset", "clock-button-reset", () => { reset(); });
+
+                function createControlButton (label, id, callBack) {
+                    var elem = document.createElement("button");
+                    elem.setAttribute("id", id);
+                    elem.innerText = label;
+                    elem.onclick = () => { callBack(); };
+                    root.append(elem);
+                }
+            }
+
+            reset();
+        }
+
+        function start () {
+            if (elapsed != null) return;
+
+            // If paused or reset, restart it
+            if (paused) pause();
+            else {
+                lastTimeStamp = Date.now();
+                elapsed = setInterval(function () { onTick(); }, 1000);
+            }
+        }
+
+        function pause () {
+            // If not running and not paused, return
+            if (!paused && elapsed == null) return;
+
+            // Unpause timer
+            if (paused && elapsed == null) {
+                paused = false;
+                lastTimeStamp = Date.now();
+                //console.log("Timer started with offset: " + offsetPaused);
+                setTimeout(() => {
+                    clearTimeout(timeout);
+                    timeout = null;
+                    offsetPaused = 0;
+                    onTick();
+                    elapsed = setInterval(function () { onTick(); }, 1000);
+                }, offsetPaused);
+                return;
+            }
+
+            // Pause timer
+            clearInterval(elapsed);
+            elapsed = null;
+            paused = true;
+            if (timeout != null) {
+                clearTimeout(timeout);
+                timeout = null;
+                offsetPaused -= (Date.now() - lastTimeStamp);
+                if (offsetPaused < 0) offsetPaused = 0;
+            } else {
+                offsetPaused = 1000 - (Date.now() - lastTimeStamp);
+            }
+        }
+
+
+        function reset () {
+            clearTimeout(timeout);
+            timeout = null;
+            clearInterval(elapsed);
+            elapsed = null;
+            paused = false;
+            timeArray = [0,0, 0,0, 0,0]
+            lastTimeStamp = 0;
+            offsetPaused = 0;
+            digitSpans.forEach((value, key, parent) => { value.setAttribute("data-digit-position", 0); });
+        }
+
+        function onTick () {
+            lastTimeStamp = Date.now();
+            if (timeArray[5] == 9) { timeArray[5] = 0;
+                if (timeArray[4] == 5) { timeArray[4] = 0;
+                    if (timeArray[3] == 9) { timeArray[3] = 0;
+                        if (timeArray[2] == 5) { timeArray[2] = 0;
+                            if (timeArray[1] == 9) { timeArray[1] = 0;
+                                if (timeArray[0] == 9) timeArray = [0,0, 0,0, 0,0];
+                                else timeArray[0]++;
+                            } else timeArray[1]++;
+                        } else timeArray[2]++;
+                    } else timeArray[3]++;
+                } else timeArray[4]++;
+            } else timeArray[5]++;
+
+            for (var i=0, j=digitSpans.length; i<j; i++) {
+                digitSpans[i].setAttribute("data-digit-position", String(timeArray[i]));
+            }
+        }
+
+        function getTime () { return {hours: timeArray[0] * 10 + timeArray[1], minutes: timeArray[2] * 10 + timeArray[3], seconds: timeArray[4] * 10 + timeArray[5]}; }
+
+        return {
+            init:init,
+            start:start,
+            stop:stop,
+            pause:pause,
+            reset:reset,
+            onTick:onTick,
+            getTime:getTime
+        };
+    }();
+
+
     //  +-------------------+
     //  |      Builder      |
     //  +-------------------+
@@ -1461,7 +1648,7 @@ var sudoku = function () {
             this.containerTopElems.top.logo = buildElement('span', ATTR.ID.LOGO, null, 'Sudoku', null, this.containerTopElems.topContainer);
     
             // Pause Button
-            this.containerTopElems.top.pauseButton = buildButton('span', ATTR.ID.BTN_PAUSE, null, null, (e) => { clock.pause(); }, this.containerTopElems.topContainer)
+            this.containerTopElems.top.pauseButton = buildButton('span', ATTR.ID.BTN_PAUSE, null, null, (e) => { state.pause(); }, this.containerTopElems.topContainer)
             this.containerTopElems.top.pauseIcon = buildImage('img', ATTR.ID.BTN_PAUSE_ICON, null, ATTR.SRC.SVG.UNPAUSED, this.containerTopElems.top.pauseButton);
     
             // Action buttons
@@ -1474,7 +1661,7 @@ var sudoku = function () {
 
             // Clock
             this.containerTopElems.bottom.clockContainer = buildElement('span', ATTR.ID.CLOCK_ROOT, null, null, null, this.containerTopElems.bottomContainer);
-            clockInit(this.containerTopElems.bottom.clockContainer, false);
+            clock.init(this.containerTopElems.bottom.clockContainer, false);
         }
     
         function ContainerGrid () {
@@ -1542,6 +1729,9 @@ var sudoku = function () {
                     });
                 })(this.containerBottomElems.bottom.buttons[i], grid.possibleValues[i], selection.setValue);
             }
+
+            this.checkContainer = buildElement('div', 'sudoku-button-check-container', null, null, null, this.root);
+            this.checkButton = buildButton('button', 'sudoku-button-check', null, 'Check for errors...', (e) => { checker.check(); }, this.checkContainer);
         }
     
         /**
@@ -1650,38 +1840,37 @@ var sudoku = function () {
         for (var cellData of grid.cellMap.values()) {
             if (cellData.state == CELL_STATE.PENCIL || cellData.value == grid.emptyValue || cellData.hasData(ATTR.DATA.ERROR)) return;
         }
-        clock.stop();
+        state.stop();
         alert("You won!");
     }
 
-    var isPaused = false;
-
-    var clock = {
+    var state = {
+        paused : false,
         start : () => {
-            if (isPaused) clock.pause();
-            else clockStart();
+            if (state.paused) state.pause();
+            else clock.start();
         },
         pause : () => {
-            if (isPaused) {
-                isPaused = false;
+            if (state.paused) {
+                state.paused = false;
                 elems.containerGridElems.table.removeAttribute("data-puzzle-paused");
                 elems.containerTopElems.top.pauseIcon.setAttribute("src", ATTR.SRC.SVG.UNPAUSED);
             } else {
-                isPaused = true;
+                state.paused = true;
                 elems.containerGridElems.table.setAttribute("data-puzzle-paused", "");
                 elems.containerTopElems.top.pauseIcon.setAttribute("src", ATTR.SRC.SVG.PAUSED);
             }
-            clockPause();
+            clock.pause();
         },
         reset : () => {
-            clockReset();
-            isPaused = false;
+            clock.reset();
+            state.paused = false;
             elems.containerGridElems.table.removeAttribute("data-puzzle-paused");
             elems.containerTopElems.top.pauseIcon.setAttribute("src", ATTR.SRC.SVG.UNPAUSED);
         },
         stop : () => {
-            clockPause();
-            isPaused = true;
+            clock.pause();
+            state.paused = true;
             elems.containerGridElems.table.removeAttribute("data-puzzle-paused");
             elems.containerTopElems.top.pauseIcon.setAttribute("src", ATTR.SRC.SVG.UNPAUSED);
         }

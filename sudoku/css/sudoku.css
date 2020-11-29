@@ -1,6 +1,7 @@
 :root {
     --font-open-sans: 'Open Sans', sans-serif;
 
+    --font-weight-digit-pencil: 400;
     --font-weight-digit-clue: 500;
     --font-weight-digit-input: 300;
     --font-weight-digit-highlight: 600;
@@ -18,6 +19,7 @@
     --digit-size-pencil-default: calc(var(--grid-size-default)*0.02);
 
     --top-bar-logo-font-size: 32px;
+    --top-bar-button-font-size: calc(var(--grid-size)*0.03);
     --top-bar-block-start: calc(var(--top-bar-logo-font-size) * 1.0);
     --top-bar-block-stop: calc(var(--top-bar-logo-font-size) * 0.2);
     --top-bar-height: calc(var(--top-bar-logo-font-size) * 1.2);
@@ -317,6 +319,13 @@ body {
     background-color: var(--color-error-cell-selected-single);
 }
 
+/* Checker cell error */
+#sudoku-doc-root #sudoku-root #sudoku-container-grid .sudoku-row .sudoku-cell[data-sudoku-check='error'],
+#sudoku-doc-root #sudoku-root #sudoku-container-grid .sudoku-row .sudoku-cell[data-sudoku-cell-selected="single"][data-sudoku-check='error'],
+#sudoku-doc-root #sudoku-root #sudoku-container-grid .sudoku-row .sudoku-cell[data-sudoku-cell-selected="multi"][data-sudoku-check='error'] {
+    background-color: var(--color-error-cell-selected-single);
+}
+
 #sudoku-root .sudoku-row .sudoku-cell[data-cell-state="pencil"] {
     font-size: var(--digit-size-pencil-default);
     font-weight: 500;
@@ -481,4 +490,33 @@ body {
 #sudoku-root #sudoku-container-top #sudoku-container-top-bottom #sudoku-button-container-core button:hover {
     opacity: 0.9;
     background-color: rgb(226, 226, 226);
+}
+
+/* Check button */
+#sudoku-root #sudoku-button-check-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-top: 20px;
+}
+
+#sudoku-root #sudoku-button-check-container #sudoku-button-check {
+    font-size: var(--top-bar-button-font-size);
+    font-weight: 600;
+    margin-right: 8px;
+    outline: none;
+    border: none;
+    text-decoration: none;
+    color: var(--color-grid);
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.1s ease-in, background-color 0.1s ease-in;
+    background-color: var(--color-background);
+    border-radius: 4px;
+}
+
+#sudoku-root #sudoku-button-check-container #sudoku-button-check:active {
+    opacity: 1.0;
+    background-color: var(--color-04);
 }

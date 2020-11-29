@@ -317,6 +317,13 @@ body {
     background-color: var(--color-error-cell-selected-single);
 }
 
+/* Checker cell error */
+#sudoku-doc-root #sudoku-root #sudoku-container-grid .sudoku-row .sudoku-cell[data-sudoku-check='error'],
+#sudoku-doc-root #sudoku-root #sudoku-container-grid .sudoku-row .sudoku-cell[data-sudoku-cell-selected="single"][data-sudoku-check='error'],
+#sudoku-doc-root #sudoku-root #sudoku-container-grid .sudoku-row .sudoku-cell[data-sudoku-cell-selected="multi"][data-sudoku-check='error'] {
+    background-color: var(--color-error-cell-selected-single);
+}
+
 #sudoku-root .sudoku-row .sudoku-cell[data-cell-state="pencil"] {
     font-size: var(--digit-size-pencil);
     font-weight: var(--font-weight-digit-pencil);
@@ -477,6 +484,35 @@ body {
 }
 
 #sudoku-root #sudoku-container-top #sudoku-container-top-bottom #sudoku-button-container-core button:active {
+    opacity: 1.0;
+    background-color: var(--color-04);
+}
+
+/* Check button */
+#sudoku-root #sudoku-button-check-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-top: 20px;
+}
+
+#sudoku-root #sudoku-button-check-container #sudoku-button-check {
+    font-size: var(--top-bar-button-font-size);
+    font-weight: 600;
+    margin-right: 8px;
+    outline: none;
+    border: none;
+    text-decoration: none;
+    color: var(--color-grid);
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.1s ease-in, background-color 0.1s ease-in;
+    background-color: var(--color-background);
+    border-radius: 4px;
+}
+
+#sudoku-root #sudoku-button-check-container #sudoku-button-check:active {
     opacity: 1.0;
     background-color: var(--color-04);
 }
