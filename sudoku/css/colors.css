@@ -1,0 +1,40 @@
+:root {
+    --color-00: white;
+    --color-01: black;
+    --color-02: rgb(236, 241, 245);
+    --color-03: rgb(218, 228, 236);
+    --color-04: rgb(173, 199, 219);
+    --color-05: rgb(146, 177, 200);
+    --color-06: rgb(53, 92, 122);
+    --color-07: rgb(241, 221, 221);
+    --color-08: rgb(223, 188, 188);
+    --color-09: rgb(212, 149, 149);
+    --color-10: rgb(194, 126, 126);
+    --color-11: rgb(163, 50, 50);
+    --color-12: rgb(114, 51, 51);
+    --color-13: rgba(56,112,138,0.55);
+
+    /* Body colors */
+    --color-background: var(--color-00);
+    --color-grid: var(--color-01);
+    /* Cell colors */
+    --color-cell: var(--color-00);
+    --color-cell-highlight: var(--color-02);
+    --color-cell-highlight-digit: var(--color-04);
+    --color-cell-selected-single: var(--color-05);
+    --color-cell-selected-multi: var(--color-03);
+    /* Digit colors */
+    --color-digit: var(--color-01);
+    --color-digit-clue: var(--color-01);
+    --color-digit-input: var(--color-06);
+    /* Error colors */
+    --color-error-digit: var(--color-11);
+    --color-error-digit-clue: var(--color-12);
+    --color-error-cell: var(--color-07);
+    --color-error-cell-digit: var(--color-09);
+    --color-error-cell-selected-multi: var(--color-08);
+    --color-error-cell-selected-single: var(--color-10);
+
+    --color-anim-grid-fade: var(--color-05);
+    --color-anim-shadow-fade: var(--color-13);
+}

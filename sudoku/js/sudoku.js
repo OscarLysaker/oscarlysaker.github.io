@@ -63,7 +63,12 @@ var sudoku = function () {
             BTN_REDO : 'sudoku-button-redo',
             BTN_ERASER : 'sudoku-button-eraser',
             BTN_PEN : 'sudoku-button-pen',
-            BTN_HINT : 'sudoku-button-hint'
+            BTN_HINT : 'sudoku-button-hint',
+
+            // Checker
+            BTN_CHECK_CONTAINER : 'sudoku-button-check-container',
+            BTN_CHECK : 'sudoku-button-check'
+
         },
         CLASS : {
             // Buttons
@@ -104,7 +109,10 @@ var sudoku = function () {
 
             ERROR : 'data-sudoku-error',
             SELECTED : 'data-sudoku-cell-selected',
-            CHECK : 'data-sudoku-check'
+            CHECK : 'data-sudoku-check',
+            PUZZLE_PAUSED : 'data-puzzle-paused',
+            DIGIT_POSITION : 'data-digit-position',
+            CELL_START_ANIM : 'data-sudoku-cell-start-anim'
         }
     }
 
@@ -196,14 +204,12 @@ var sudoku = function () {
             this.cellsPerGroup = this.groupWidth * this.groupHeight;
         }
         this.cells = [];
-        this.cellMap = new Map();
         this.cellData = [];
         this.cellRow = [];
         this.cellColumn = [];
         this.cellGroup = [];
         this.setCells = (cellArray) => {
             this.cells.length = 0;
-            this.cellMap = new Map();
             this.cellData.length = 0;
             this.cellRow.length = 0;
             this.cellColumn.length = 0;
@@ -215,8 +221,7 @@ var sudoku = function () {
                 var v = cellArray[i].getAttribute(ATTR.DATA.CELL_VALUE);
                 var s = cellArray[i].getAttribute(ATTR.DATA.CELL_STATE);
                 this.cells.push(cellArray[i]);
-                this.cellMap.set(cellArray[i], new CellData(cellArray[i], i, x, y, g, s, v));
-                this.cellData.push(this.cellMap.get(cellArray[i]));
+                this.cellData.push(new CellData(cellArray[i], i, x, y, g, s, v));
                 while (this.cellRow.length < y+1) this.cellRow.push([]);
                 while (this.cellColumn.length < x+1) this.cellColumn.push([]);
                 while (this.cellGroup.length < g+1) this.cellGroup.push([]);
@@ -232,7 +237,6 @@ var sudoku = function () {
     var grid = new GridData(GRID_SIZE.NORMAL);
     var elems = null;
     var debugging = false;
-    var allowSolve = false;
 
     function init () {
         isTouch = detectMob();
@@ -246,7 +250,7 @@ var sudoku = function () {
         pencil.toggle(false);
         elems.containerBottomElems.top.buttons.hint.root.setAttribute(ATTR.DATA.BUTTON_STATE, BUTTON_STATE.DISABLED);
         for (var i=0, j=elems.containerBottomElems.bottom.buttons.length; i<j; i++) {
-            elems.containerBottomElems.bottom.buttons[i].removeAttribute("data-sudoku-button-state", "disabled");
+            elems.containerBottomElems.bottom.buttons[i].removeAttribute(ATTR.DATA.BUTTON_STATE);
         }
         state.reset();
         actions.setCellValue(grid.cellData, grid.emptyValue, false, false, CELL_STATE.NORMAL);
@@ -254,7 +258,7 @@ var sudoku = function () {
         log.reset();
         arrow.remove();
         if (playerInput) {
-            allowSolve = false;
+            solver.allow = false;
             hints.allow = false;
         }
     }
@@ -268,13 +272,13 @@ var sudoku = function () {
         elems.containerBottomElems.top.buttons.hint.root.removeAttribute(ATTR.DATA.BUTTON_STATE);
         while (cellTimeouts.length > 0) clearTimeout(cellTimeouts.splice(0,1)[0]);
 
-        grid.cellData.forEach((cellData) => { cellData.removeData("data-sudoku-cell-start-anim"); });
+        grid.cellData.forEach((cellData) => { cellData.removeData(ATTR.DATA.CELL_START_ANIM); });
 
         var animOffset = 4;
         var animTotal = 4 * 81 + 400;
         cellTimeouts.push(
             setTimeout(function () {
-                grid.cellData.forEach((cellData) => { cellData.removeData("data-sudoku-cell-start-anim"); });
+                grid.cellData.forEach((cellData) => { cellData.removeData(ATTR.DATA.CELL_START_ANIM); });
                 state.start();
                 console.log("Started clock...");
             }, animTotal)
@@ -283,14 +287,14 @@ var sudoku = function () {
             (function (cellData, value, state, timeout) {
                 cellTimeouts.push(
                     setTimeout(function () {
-                        cellData.setData("data-sudoku-cell-start-anim", "");
+                        cellData.setData(ATTR.DATA.CELL_START_ANIM, "");
                         actions.setCellValue(cellData, value, false, false, state);
                     }, timeout)
                 );
             })(cellData, grid.puzzleData.puzzle[cellData.index], grid.puzzleData.puzzle[cellData.index] == grid.emptyValue ? CELL_STATE.NORMAL : CELL_STATE.CLUE, cellData.index * animOffset);
         }
 
-        allowSolve = true;
+        solver.allow = true;
         hints.allow = true;
     }
 
@@ -305,20 +309,13 @@ var sudoku = function () {
 
     var pencil = function () {
 
-        var active = false;
-
+        this.active = false;
         function toggle (force=null) {
             elems.containerBottomElems.top.buttons.pen.root.setAttribute(ATTR.DATA.BUTTON_STATE, force == null ? pencil.active ? BUTTON_STATE.INACTIVE : BUTTON_STATE.ACTIVE : force == true ? BUTTON_STATE.ACTIVE : BUTTON_STATE.INACTIVE);
             elems.containerBottomElems.top.buttons.pen.icon.setAttribute('src', force == null ? pencil.active ? ATTR.SRC.SVG.PEN_OFF : ATTR.SRC.SVG.PEN_ON : force == true ? ATTR.SRC.SVG.PEN_ON : ATTR.SRC.SVG.PEN_OFF);
             pencil.active = force == null ? !pencil.active : force;
-
-            console.log("PENCIL STATE: " + pencil.active);
         }
-
-        return {
-            active:active,
-            toggle:toggle
-        };
+        return {active:active, toggle:toggle};
     }();
 
     //  +------------------+
@@ -352,10 +349,7 @@ var sudoku = function () {
             actions.setCellValue(unresolved[index], grid.puzzleData.solution[i], false, true, CELL_STATE.NORMAL);
         }
 
-        return {
-            allow:allow,
-            reveal:reveal
-        }
+        return {allow:allow, reveal:reveal};
     }();
 
     //  +-------------------+
@@ -526,9 +520,7 @@ var sudoku = function () {
             }
         }
 
-        function setValue (value) {
-            actions.setCellValue(cells, value, true, true);
-        }
+        function setValue (value) { actions.setCellValue(cells, value, true, true); }
 
         return {cells:cells, dragging:dragging, dragFirstCell:dragFirstCell, remove:remove, select:select, setValue:setValue};
     }();
@@ -567,7 +559,7 @@ var sudoku = function () {
             if (ny < 0) ny = grid.height-1;
             
             arrow.remove();
-            cell = grid.cellData[ny * grid.width + nx];
+            cell = grid.cellData[ny*grid.width+nx];
             cell.setData(ATTR.DATA.ARROW_HIGHLIGHT, "");
 
             if (selection.cells.length >= 0 && KEY_DOWN.SHIFT) selection.select(cell, true);
@@ -694,16 +686,16 @@ var sudoku = function () {
     var highlights = function () {
 
         function remove () {
-            for (var [index, cellData] of grid.cellData.entries()) {
-                cellData.removeData(ATTR.DATA.HIGHLIGHT);
-                cellData.removeData(ATTR.DATA.DIGIT_HIGHLIGHT);
-            }
+            grid.cellData.forEach((cd) => {
+                cd.removeData(ATTR.DATA.HIGHLIGHT);
+                cd.removeData(ATTR.DATA.DIGIT_HIGHLIGHT);
+            });
         }
 
         function updatePencil () {
 
             // Reset pencil cells
-            for (var [index, cellData] of grid.cellData.entries()) if (cellData.state == CELL_STATE.PENCIL) cellData.cell.innerText = cellData.value;
+            grid.cellData.forEach((cd) => { if (cd.state == CELL_STATE.PENCIL) cd.cell.innerText = cd.value; });
 
             // Update highlights
             if (selection.cells.length == 1 && (selection.cells[0].state != CELL_STATE.NORMAL && selection.cells[0].state != CELL_STATE.CLUE)) return;
@@ -723,14 +715,14 @@ var sudoku = function () {
                     tempSpanHigh.innerText = selectedValue;
 
                     var splitValue = cellValue.split("");
-                    for (var ii=0, jj=splitValue.length; ii<jj; ii++) {
-                        if (splitValue[ii] == selectedValue) {
+                    for (var i=0, j=splitValue.length; i<j; i++) {
+                        if (splitValue[i] == selectedValue) {
                             if (tempSpanLow.innerText != "") cellData.cell.append(tempSpanLow);
                             tempSpanLow = document.createElement("span");
                             tempSpanLow.setAttribute(ATTR.DATA.PENCIL_HIGHLIGHT, "");
                             cellData.cell.append(tempSpanHigh);
                         } else {
-                            tempSpanLow.append(splitValue[ii]);
+                            tempSpanLow.append(splitValue[i]);
                         }
                     }
 
@@ -744,44 +736,29 @@ var sudoku = function () {
             if (selection.cells.length == 0 || selection.cells[0].value == grid.emptyValue || selection.cells[0].state == CELL_STATE.PENCIL) return;
             
             var cellData = selection.cells[0];
-            var groupX = Math.floor(cellData.x/grid.groupWidth) * grid.groupWidth;
-            var groupY = Math.floor(cellData.y/grid.groupHeight) * grid.groupHeight;
 
-            for (var i=cellData.y*grid.width, j=cellData.y*grid.width+grid.width; i<j; i++) {
-                if (i!=cellData.index) grid.cellData[i].setData(ATTR.DATA.HIGHLIGHT, "");
-            }
-
-            for (var i=cellData.x, j=cellData.x+grid.width*grid.height; i<j; i+=grid.width) {
-                if (i!=cellData.index) grid.cellData[i].setData(ATTR.DATA.HIGHLIGHT, "");
-            }
-
-            for (var x=groupX, xl=groupX+grid.groupWidth; x<xl; x++) {
-                for (var y=groupY*grid.width, yl=grid.width*(groupY+grid.groupHeight); y<yl; y+=grid.width) {
-                    if (x+y != cellData.index) grid.cellData[x+y].setData(ATTR.DATA.HIGHLIGHT, "");
-                }
-            }
+            grid.cellRow[cellData.y].forEach((cd) => { if (cd!=cellData) cd.setData(ATTR.DATA.HIGHLIGHT, "")});
+            grid.cellColumn[cellData.x].forEach((cd) => { if (cd!=cellData) cd.setData(ATTR.DATA.HIGHLIGHT, "")});
+            grid.cellGroup[cellData.g].forEach((cd) => { if (cd!=cellData) cd.setData(ATTR.DATA.HIGHLIGHT, "")});
 
             // Highlight digits
             if (cellData.value != grid.emptyValue && cellData.state != CELL_STATE.PENCIL) {
-                for (var [i, cd] of grid.cellData.entries()) {
-                    if (cd == cellData || cd.state == CELL_STATE.PENCIL) continue;
-                    if (cd.value == cellData.value) cd.setData(ATTR.DATA.DIGIT_HIGHLIGHT, "");
-                }
+                grid.cellData.forEach((cd) => {
+                    if (cd != cellData && cd.state != CELL_STATE.PENCIL && cd.value == cellData.value) cd.setData(ATTR.DATA.DIGIT_HIGHLIGHT, "");
+                });
             }
         }
 
         function updateError () {
 
-            for (var [index, cellData] of grid.cellData.entries()) if (cellData.hasData(ATTR.DATA.ERROR)) cellData.removeData(ATTR.DATA.ERROR);
+            grid.cellData.forEach((cd) => { if (cd.hasData(ATTR.DATA.ERROR)) cd.removeData(ATTR.DATA.ERROR); });
 
             var groups=[], rows=[], columns=[];
 
             // Check conflicting cells
             var checkCells = new Map();
             for (var i=0, j=grid.possibleValues.length; i<j; i++) checkCells.set(grid.possibleValues[i], []);
-            for (var [index, cellData] of grid.cellData.entries()) {
-                if (cellData.value != grid.emptyValue && cellData.value.length == 1 && cellData.state != CELL_STATE.PENCIL) checkCells.get(cellData.value).push(cellData);
-            }
+            grid.cellData.forEach((cd) => { if (cd.value != grid.emptyValue && cd.value.length == 1 && cd.state != CELL_STATE.PENCIL) checkCells.get(cd.value).push(cd); });
             for (var cells of checkCells.values()) {
                 for (var c0 of cells) {
                     for (var c1 of cells) {
@@ -798,29 +775,18 @@ var sudoku = function () {
             }
 
             // Highlight groups
-            var groupX=0, groupY=0;
             for (var i=0, j=groups.length; i<j; i++) {
-                groupX = (groups[i] % grid.groupsX) * grid.groupWidth;
-                groupY = Math.floor(groups[i] / grid.groupsX) * grid.groupHeight;
-                for (var x=groupX, xl=groupX+grid.groupWidth; x<xl; x++) {
-                    for (var y=groupY*grid.width, yl=(groupY+grid.groupHeight)*grid.width; y<yl; y+=grid.width) {
-                        if (!grid.cellData[y+x].hasData(ATTR.DATA.ERROR)) grid.cellData[y+x].setData(ATTR.DATA.ERROR, CELL_ERROR.CELL);
-                    }
-                }
+                grid.cellGroup[groups[i]].forEach((cd) => { if (!cd.hasData(ATTR.DATA.ERROR)) cd.setData(ATTR.DATA.ERROR, CELL_ERROR.CELL); });
             }
 
             // Highlight rows
             for (var i=0, j=rows.length; i<j; i++) {
-                for (var x=rows[i]*grid.width, xl=rows[i]*grid.width+grid.width; x<xl; x++) {
-                    if (!grid.cellData[x].hasData(ATTR.DATA.ERROR)) grid.cellData[x].setData(ATTR.DATA.ERROR, CELL_ERROR.CELL);
-                }
+                grid.cellRow[rows[i]].forEach((cd) => { if (!cd.hasData(ATTR.DATA.ERROR)) cd.setData(ATTR.DATA.ERROR, CELL_ERROR.CELL); });
             }
 
             // Highlight columns
             for (var i=0, j=columns.length; i<j; i++) {
-                for (var y=columns[i], yl=columns[i]+grid.width*grid.height; y<yl; y+=grid.width) {
-                    if (!grid.cellData[y].hasData(ATTR.DATA.ERROR)) grid.cellData[y].setData(ATTR.DATA.ERROR, CELL_ERROR.CELL);
-                }
+                grid.cellColumn[columns[i]].forEach((cd) => { if (!cd.hasData(ATTR.DATA.ERROR)) cd.setData(ATTR.DATA.ERROR, CELL_ERROR.CELL); });
             }
 
             var gridIndexes=[], errorNums=[];
@@ -832,7 +798,7 @@ var sudoku = function () {
                     if (gridIndexes.indexOf(cells[i].g) < 0) gridIndexes.push(cells[i].g);
                     if (cells[i].getData(ATTR.DATA.ERROR) == CELL_ERROR.DIGIT) errorNums.push(cells[i]);
                 }
-                if (gridIndexes.length > grid.groupsTotal-1 && errorNums.length == 0) {
+                if (gridIndexes.length == grid.groupsTotal && errorNums.length == 0) {
                     elems.containerBottomElems.bottom.buttons[grid.possibleValues.indexOf(cells[0].value)].setAttribute(ATTR.DATA.BUTTON_STATE, BUTTON_STATE.DISABLED);
                 } else elems.containerBottomElems.bottom.buttons[grid.possibleValues.indexOf(cells[0].value)].removeAttribute(ATTR.DATA.BUTTON_STATE);
             }
@@ -898,17 +864,18 @@ var sudoku = function () {
 
     var solver = function () {
 
+        this.allow = false;
+
         function solve () {
-
-            if (grid.puzzleData != null) {
-                if (!allowSolve) return;
-                for (var i=0, j=grid.puzzleData.puzzle.length; i<j; i++) {
-                    if (grid.puzzleData.puzzle[i] != grid.emptyValue && grid.cellData[i].value == grid.puzzleData.solution[i]) continue;
-                    actions.setCellValue(grid.cellData[i], grid.puzzleData.solution[i], false, false, CELL_STATE.NORMAL);
-                }
-                return;
+            if (grid.puzzleData == null || !solver.allow) return;
+            for (var i=0, j=grid.puzzleData.puzzle.length; i<j; i++) {
+                if (grid.cellData[i].state == CELL_STATE.CLUE) continue;
+                if (grid.puzzleData.puzzle[i] == grid.emptyValue && grid.cellData[i].value == grid.puzzleData.solution[i]) continue;
+                actions.setCellValue(grid.cellData[i], grid.puzzleData.solution[i], false, false, CELL_STATE.NORMAL);
             }
+        }
 
+        function solveRandom () {
             // Construct solve grid structure
             var gridArray = []
             for (var [index, cellData] of grid.cellData.entries()) {
@@ -1096,6 +1063,7 @@ var sudoku = function () {
         }
 
         return {
+            allow:allow,
             solve:solve
         };
     }();
@@ -1534,7 +1502,7 @@ var sudoku = function () {
             timeArray = [0,0, 0,0, 0,0]
             lastTimeStamp = 0;
             offsetPaused = 0;
-            digitSpans.forEach((value, key, parent) => { value.setAttribute("data-digit-position", 0); });
+            digitSpans.forEach((value, key, parent) => { value.setAttribute(ATTR.DATA.DIGIT_POSITION, 0); });
         }
 
         function onTick () {
@@ -1553,7 +1521,7 @@ var sudoku = function () {
             } else timeArray[5]++;
 
             for (var i=0, j=digitSpans.length; i<j; i++) {
-                digitSpans[i].setAttribute("data-digit-position", String(timeArray[i]));
+                digitSpans[i].setAttribute(ATTR.DATA.DIGIT_POSITION, String(timeArray[i]));
             }
         }
 
@@ -1693,8 +1661,8 @@ var sudoku = function () {
                 })(this.containerBottomElems.bottom.buttons[i], grid.possibleValues[i], selection.setValue);
             }
 
-            this.checkContainer = buildElement('div', 'sudoku-button-check-container', null, null, null, this.root);
-            this.checkButton = buildButton('button', 'sudoku-button-check', null, 'Check for errors...', (e) => { checker.check(); }, this.checkContainer);
+            this.checkContainer = buildElement('div', ATTR.ID.BTN_CHECK_CONTAINER, null, null, null, this.root);
+            this.checkButton = buildButton('button', ATTR.ID.BTN_CHECK, null, 'Check for errors...', (e) => { checker.check(); }, this.checkContainer);
         }
     
         /**
@@ -1817,11 +1785,11 @@ var sudoku = function () {
         pause : () => {
             if (state.paused) {
                 state.paused = false;
-                elems.containerGridElems.table.removeAttribute("data-puzzle-paused");
+                elems.containerGridElems.table.removeAttribute(ATTR.DATA.PUZZLE_PAUSED);
                 elems.containerTopElems.top.pauseIcon.setAttribute("src", ATTR.SRC.SVG.UNPAUSED);
             } else {
                 state.paused = true;
-                elems.containerGridElems.table.setAttribute("data-puzzle-paused", "");
+                elems.containerGridElems.table.setAttribute(ATTR.DATA.PUZZLE_PAUSED, "");
                 elems.containerTopElems.top.pauseIcon.setAttribute("src", ATTR.SRC.SVG.PAUSED);
             }
             clock.pause();
@@ -1829,13 +1797,13 @@ var sudoku = function () {
         reset : () => {
             clock.reset();
             state.paused = false;
-            elems.containerGridElems.table.removeAttribute("data-puzzle-paused");
+            elems.containerGridElems.table.removeAttribute(ATTR.DATA.PUZZLE_PAUSED);
             elems.containerTopElems.top.pauseIcon.setAttribute("src", ATTR.SRC.SVG.UNPAUSED);
         },
         stop : () => {
             clock.pause();
             state.paused = true;
-            elems.containerGridElems.table.removeAttribute("data-puzzle-paused");
+            elems.containerGridElems.table.removeAttribute(ATTR.DATA.PUZZLE_PAUSED);
             elems.containerTopElems.top.pauseIcon.setAttribute("src", ATTR.SRC.SVG.UNPAUSED);
         }
     }

@@ -24,45 +24,6 @@
     --top-bar-block-stop: calc(var(--top-bar-logo-font-size) * 0.2);
     --top-bar-height: calc(var(--top-bar-logo-font-size) * 1.2);
     --top-bar-height-full: calc(var(--top-bar-height) + var(--top-bar-block-stop) + var(--top-bar-block-start));
-
-    --color-00: white;
-    --color-01: black;
-    --color-02: rgb(236, 241, 245);
-    --color-03: rgb(218, 228, 236);
-    --color-04: rgb(173, 199, 219);
-    --color-05: rgb(146, 177, 200);
-    --color-06: rgb(53, 92, 122);
-    --color-07: rgb(241, 221, 221);
-    --color-08: rgb(223, 188, 188);
-    --color-09: rgb(212, 149, 149);
-    --color-10: rgb(194, 126, 126);
-    --color-11: rgb(163, 50, 50);
-    --color-12: rgb(114, 51, 51);
-    --color-13: rgba(56,112,138,0.55);
-
-    /* Body colors */
-    --color-background: var(--color-00);
-    --color-grid: var(--color-01);
-    /* Cell colors */
-    --color-cell: var(--color-00);
-    --color-cell-highlight: var(--color-02);
-    --color-cell-highlight-digit: var(--color-04);
-    --color-cell-selected-single: var(--color-05);
-    --color-cell-selected-multi: var(--color-03);
-    /* Digit colors */
-    --color-digit: var(--color-01);
-    --color-digit-clue: var(--color-01);
-    --color-digit-input: var(--color-06);
-    /* Error colors */
-    --color-error-digit: var(--color-11);
-    --color-error-digit-clue: var(--color-12);
-    --color-error-cell: var(--color-07);
-    --color-error-cell-digit: var(--color-09);
-    --color-error-cell-selected-multi: var(--color-08);
-    --color-error-cell-selected-single: var(--color-10);
-
-    --color-anim-grid-fade: var(--color-05);
-    --color-anim-shadow-fade: var(--color-13);
 }
 
 html {
@@ -399,15 +360,15 @@ body {
     margin-right:0vmin;
 }
 
-#sudoku-root #sudoku-container-bottom #sudoku-button-container-actions #sudoku-button-pen [data-sudoku-button-state="active"],
-#sudoku-root #sudoku-container-bottom #sudoku-button-container-actions #sudoku-button-pen [data-sudoku-button-state="active"]:hover {
+#sudoku-root #sudoku-container-bottom #sudoku-button-container-actions #sudoku-button-pen [data-button-state="active"],
+#sudoku-root #sudoku-container-bottom #sudoku-button-container-actions #sudoku-button-pen [data-button-state="active"]:hover {
     background-color: #bad4dbab;
 }
 
-#sudoku-root #sudoku-container-bottom #sudoku-button-container-actions button[data-sudoku-button-state="disabled"],
-#sudoku-root #sudoku-container-bottom #sudoku-button-container-actions button[data-sudoku-button-state="disabled"] img,
-#sudoku-root #sudoku-container-bottom #sudoku-button-container-actions button[data-sudoku-button-state="disabled"] div,
-#sudoku-root #sudoku-container-bottom #sudoku-button-container-actions button[data-sudoku-button-state="disabled"]:hover {
+#sudoku-root #sudoku-container-bottom #sudoku-button-container-actions button[data-button-state="disabled"],
+#sudoku-root #sudoku-container-bottom #sudoku-button-container-actions button[data-button-state="disabled"] img,
+#sudoku-root #sudoku-container-bottom #sudoku-button-container-actions button[data-button-state="disabled"] div,
+#sudoku-root #sudoku-container-bottom #sudoku-button-container-actions button[data-button-state="disabled"]:hover {
     opacity: 0.6;
     cursor: default;
     background-color: white;
@@ -456,10 +417,10 @@ body {
     cursor: pointer;
 }
 
-#sudoku-root #sudoku-container-bottom #sudoku-button-container-values .sudoku-buttons-values [data-sudoku-button-state="disabled"],
-#sudoku-root #sudoku-container-bottom #sudoku-button-container-values .sudoku-buttons-values [data-sudoku-button-state="disabled"]:hover,
-#sudoku-root #sudoku-container-bottom #sudoku-button-container-values .sudoku-buttons-values [data-sudoku-button-state="disabled"]:active,
-#sudoku-root #sudoku-container-bottom #sudoku-button-container-values .sudoku-buttons-values [data-sudoku-button-state="disabled"]:focus {
+#sudoku-doc-root #sudoku-root #sudoku-container-bottom #sudoku-button-container-values button.sudoku-buttons-values[data-button-state="disabled"],
+#sudoku-doc-root #sudoku-root #sudoku-container-bottom #sudoku-button-container-values button.sudoku-buttons-values[data-button-state="disabled"]:hover,
+#sudoku-doc-root #sudoku-root #sudoku-container-bottom #sudoku-button-container-values button.sudoku-buttons-values[data-button-state="disabled"]:active,
+#sudoku-doc-root #sudoku-root #sudoku-container-bottom #sudoku-button-container-values button.sudoku-buttons-values[data-button-state="disabled"]:focus {
     opacity: 0.3;
     cursor: default;
     background-color: white;
