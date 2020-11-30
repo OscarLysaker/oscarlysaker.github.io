@@ -1699,6 +1699,7 @@ var sudoku = function () {
             this.containerAlertElems = {
                 container : buildElement('div', 'sudoku-container-alert', null, null, null, this.containerGrid)
             }
+            this.containerAlertElems.container.style.display = 'none';
 
             this.alerts = {
                 win : {
