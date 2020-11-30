@@ -1730,7 +1730,7 @@ var sudoku = function () {
                     e.preventDefault();
                     for (var [i, elem] of document.elementsFromPoint(e.touches.item(0).clientX, e.touches.item(0).clientY).entries()) {
                         if (elem.getAttribute('class') == ATTR.CLASS.CELL) {
-                            input.onOverCell(elements[i].getAttribute(ATTR.DATA.CELL_X), elements[i].getAttribute(ATTR.DATA.CELL_Y));
+                            input.onOverCell(elem.getAttribute(ATTR.DATA.CELL_X), elem.getAttribute(ATTR.DATA.CELL_Y));
                             return;
                         }
                     }
