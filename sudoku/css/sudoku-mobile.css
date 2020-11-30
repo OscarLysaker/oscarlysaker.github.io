@@ -146,6 +146,10 @@ body {
 }
 
 /* Table Basic Styling */
+#sudoku-root #sudoku-container-grid {
+    position: relative;
+}
+
 #sudoku-root #sudoku-container-grid #sudoku-table {
     border-collapse: collapse;
     border: 2px solid black;

@@ -1702,7 +1702,7 @@ var sudoku = function () {
 
             this.alerts = {
                 win : {
-                    container : buildElement('div', 'alert-win', 'alert-container', null, null, this.containerAlertElems.container)
+                    container : buildElement('div', 'alert-win', 'alert-container', null, null, null)
                 }
             }
 
