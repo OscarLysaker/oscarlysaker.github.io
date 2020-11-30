@@ -26,6 +26,13 @@ var sudoku = function () {
         CELL_BORDER_BOTTOM : 'data-sudoku-cell-border-bottom'
     };
 
+    var DIFFICULTY = {
+        EASY : 0,
+        MEDIUM : 1,
+        HARD : 2,
+        EXPERT : 3
+    };
+
     var ATTR = {
         ID : {
             // ROOTS
