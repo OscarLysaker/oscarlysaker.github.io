@@ -180,6 +180,7 @@ var sudoku = function () {
 
     function GridData (gridSize=GRID_SIZE.NORMAL) {
         this.emptyValue = "0";
+        this.difficulty = DIFFICULTY.EXPERT;
         this.possibleValues = allPossibleValues.slice(0);
         this.setSize = (gridSize) => {
             switch (gridSize) {
@@ -1730,7 +1731,7 @@ var sudoku = function () {
                     var elements = document.elementsFromPoint(e.touches.item(0).clientX, e.touches.item(0).clientY);
                     for (var i=0, j=elements.length; i<j; i++) {
                         if (elements[i].getAttribute('class') == ATTR.CLASS.CELL) {
-                            input.onOverCell(elements[i]);
+                            input.onOverCell(elements[i].getAttribute(ATTR.DATA.CELL_X), elements[i].getAttribute(ATTR.DATA.CELL_Y));
                             return;
                         }
                     }
