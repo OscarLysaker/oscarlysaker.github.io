@@ -656,6 +656,22 @@ var sudoku = function () {
             }
         }
 
+        function onMoveCell (cell) {
+            var cellData = null;
+            for (var [i, cd] of grid.cellData.entries()) {
+                if (cd.cell != cell) continue;
+                cellData = cd;
+                break;
+            }
+            if (!selection.dragging && selection.dragFirstCell != cellData && pointerDown) {
+                selection.dragging = true;
+                selection.dragFirstCell = null;
+                selection.select(cellData, true);
+            } else if (selection.dragging) {
+                selection.select(cellData, true);
+            }
+        }
+
         function onPointerDown (x, y) {
             var cellData = grid.cellData[y*grid.width+x];
             pointerDown = true;
@@ -664,7 +680,7 @@ var sudoku = function () {
             selection.dragFirstCell = cellData;
         }
 
-        return {addEvent:addEvent, onOverCell:onOverCell, onPointerDown:onPointerDown, mouseOverRoot:mouseOverRoot};
+        return {addEvent:addEvent, onOverCell:onOverCell, onMoveCell:onMoveCell, onPointerDown:onPointerDown, mouseOverRoot:mouseOverRoot};
     }();
 
     //  +-------------------+
@@ -1728,9 +1744,10 @@ var sudoku = function () {
             if (isTouch) {
                 this.containerGridElems.table.addEventListener('touchmove', (e) => {
                     e.preventDefault();
-                    for (var [i, elem] of document.elementsFromPoint(e.touches.item(0).clientX, e.touches.item(0).clientY).entries()) {
+                    var elements = document.elementsFromPoint(e.touches.item(0).clientX, e.touches.item(0).clientY);
+                    for (var [i, elem] of elements.entries()) {
                         if (elem.getAttribute('class') == ATTR.CLASS.CELL) {
-                            input.onOverCell(parseInt(elem.getAttribute(ATTR.DATA.CELL_X)), parseInt(elem.getAttribute(ATTR.DATA.CELL_Y)));
+                            input.onMoveCell(elem);
                             return;
                         }
                     }
