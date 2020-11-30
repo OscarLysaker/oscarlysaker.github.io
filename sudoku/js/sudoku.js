@@ -35,6 +35,7 @@ var sudoku = function () {
             // CONTAINERS
             CONTAINER_TOP : 'sudoku-container-top',
             CONTAINER_GRID : 'sudoku-container-grid',
+            CONTAINER_ALERT : 'sudoku-container-alert',
             CONTAINER_BOTTOM : 'sudoku-container-bottom',
 
             // Grid
@@ -1068,6 +1069,104 @@ var sudoku = function () {
         };
     }();
 
+    //  +-----------------------+
+    //  |      Leaderboard      |
+    //  +-----------------------+
+
+    var leaderboard = function () {
+
+        var records = [];
+
+        function log (data) {
+            if (data == null || records.indexOf(data) >= 0) return;
+            records.push(data);
+            records.sort(sortRecords);
+        }
+
+        function isRecord (data) {
+            records.forEach((d) => {
+                if (d.difficulty == data.difficulty) {
+                    if (d.time.hours < data.time.hours) return false;
+                    else if (d.time.hours == data.time.hours) {
+                        if (d.time.minutes < data.time.minutes) return false;
+                        else if (d.time.seconds == data.time.seconds) {
+                            if (d.time.seconds <= data.time.seconds) return false;
+                        }
+                    }
+                }
+            });
+            return true;
+        }
+        function getAll () { return records; }
+        function getRecord () { if (records.length > 0) return records[0]; else return null; }
+        function hasRecord () { return records.length > 0; }
+        function sortRecords (r0, r1) {
+            if (r0.difficulty != r1.difficulty) {
+                if (r0.difficulty == DIFFICULTY.EASY) return - 1;
+                else if (r0.difficulty == DIFFICULTY.MEDIUM) return r1.difficulty == DIFFICULTY.EASY ? 1 : -1;
+                else if (r0.difficulty == DIFFICULTY.HARD) return r1.difficulty == DIFFICULTY.EXPERT ? -1 : 1;
+                else if (r0.difficulty == DIFFICULTY.EXPERT) return 1;
+                else return 0;
+            } else {
+                var t0 = r0.time.hours * 60 + r0.time.minutes + r0.time.seconds / 60;
+                var t1 = r1.time.hours * 60 + r1.time.minutes + r1.time.seconds / 60;
+                if (t0 > t1) return 1;
+                else if (t0 < t1) return -1;
+                else return 0;
+            }
+        }
+
+        function RecordData (time, puzzleData, difficulty) {
+            this.time = time;
+            this.puzzleData = puzzleData;
+            this.difficulty = difficulty;
+        }
+
+        return {
+            log:log,
+            isRecord:isRecord,
+            getRecord:getRecord,
+            hasRecord:hasRecord,
+            getAll:getAll,
+            RecordData
+        };
+    }();
+
+    //  +------------------+
+    //  |      Alerts      |
+    //  +------------------+
+
+    var alerts = function () {
+
+        var alertActive = false;
+
+        function win (title, msg, btn) {
+            if (alertActive) return;
+            alertActive = true;
+
+            onOpen();
+            elems.alerts.win.title.innerText = title;
+            elems.alerts.win.msg.innerText = msg;
+            elems.alerts.win.btn.innerText = btn;
+            elems.containerAlertElems.container.append(elems.alerts.win.container);
+        }
+
+        function onOpen () {
+            elems.containerAlertElems.container.style.display = 'flex';
+        }
+
+        function onClose () {
+            elems.containerAlertElems.container.innerHTML = '';
+            elems.containerAlertElems.container.style.display = 'none';
+            alertActive = false;
+        }
+
+        return {
+            win:win,
+            onClose:onClose
+        };
+    }();
+
     //  +--------------------+
     //  |      Generate      |
     //  +--------------------+
@@ -1565,6 +1664,7 @@ var sudoku = function () {
             // Build containers
             ContainerTop.call(this);
             ContainerGrid.call(this);
+            ContainerAlert.call(this);
             ContainerBottom.call(this);
         }
     
@@ -1593,6 +1693,22 @@ var sudoku = function () {
             // Clock
             this.containerTopElems.bottom.clockContainer = buildElement('span', ATTR.ID.CLOCK_ROOT, null, null, null, this.containerTopElems.bottomContainer);
             clock.init(this.containerTopElems.bottom.clockContainer, false);
+        }
+
+        function ContainerAlert () {
+            this.containerAlertElems = {
+                container : buildElement('div', 'sudoku-container-alert', null, null, null, this.containerGrid)
+            }
+
+            this.alerts = {
+                win : {
+                    container : buildElement('div', 'alert-win', 'alert-container', null, null, this.containerAlertElems.container)
+                }
+            }
+
+            this.alerts.win.title = buildElement('div', null, 'alert-title', 'You won!', null, this.alerts.win.container);
+            this.alerts.win.msg = buildElement('div', null, 'alert-msg', 'Sudoku cleared in ##:##:## seconds! And that is juuuust amazing in every thinkable way!', null, this.alerts.win.container);
+            this.alerts.win.btn = buildButton('button', null, 'alert-btn', 'Awesome!', (e) => { alerts.onClose(); }, this.alerts.win.container);
         }
     
         function ContainerGrid () {
@@ -1773,7 +1889,14 @@ var sudoku = function () {
             if (cellData.state == CELL_STATE.PENCIL || cellData.value == grid.emptyValue || cellData.hasData(ATTR.DATA.ERROR)) return;
         }
         state.stop();
-        alert("You won!");
+        var recordData = new leaderboard.RecordData(clock.getTime(), grid.puzzleData, grid.difficulty);
+        var isRecord = leaderboard.isRecord(recordData);
+        var winLabel = isRecord ? `Congrats, new record!` : `Solved!`;
+        var winMsg = isRecord ? 
+            `You managed to find the solution in just ${recordData.time.hours < 10 ? "0" + recordData.time.hours : recordData.time.hours}:${recordData.time.minutes < 10 ? "0" + recordData.time.minutes : recordData.time.minutes}:${recordData.time.seconds < 10 ? "0" + recordData.time.seconds : recordData.time.seconds}, well done!`:
+            `You managed to solve this sudoku in ${recordData.time.hours < 10 ? "0" + recordData.time.hours : recordData.time.hours}:${recordData.time.minutes < 10 ? "0" + recordData.time.minutes : recordData.time.minutes}:${recordData.time.seconds < 10 ? "0" + recordData.time.seconds : recordData.time.seconds}, great work!`;
+        var winBtnLabel = isRecord ? `Awesome!` : `Great!`;
+        alerts.win(winLabel, winMsg, winBtnLabel);
     }
 
     var state = {

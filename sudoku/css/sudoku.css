@@ -7,6 +7,7 @@
     --font-weight-digit-highlight: 600;
     --font-weight-digit-error: 600;
 
+    --grid-size: 600px;
     --grid-size-default: 600px;
     --grid-size-portrait: 98vmin;
     --grid-size-landscape: 80vmin;
@@ -101,13 +102,64 @@ body {
     user-select: none;
 }
 
+#sudoku-container-alert {
+    display: flex;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: var(--grid-size);
+    height: var(--grid-size);
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+#sudoku-container-alert .alert-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 40px;
+    background-color: white;
+    color: black;
+    font-weight: 500;
+    font-size: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.6);
+    max-width: 70%;
+}
+
+#sudoku-container-alert .alert-container .alert-title {
+    font-weight: 600;
+    font-size: 22px;
+    margin-bottom: 20px;
+}
+
+#sudoku-container-alert .alert-container .alert-msg {
+    font-size: 18px;
+    margin-bottom: 30px;
+    word-wrap: break-word;
+    line-height: 140%;
+    text-align: center;
+}
+
+#sudoku-container-alert .alert-container .alert-btn {
+    font-size: 18px;
+    cursor: pointer;
+}
+
+
 /* Table Basic Styling */
+#sudoku-root #sudoku-container-grid {
+    position: relative;
+}
+
 #sudoku-root #sudoku-container-grid #sudoku-table {
     border-collapse: collapse;
     border: 2px solid black;
     table-layout: fixed;
-    width: 500px;
-    height: 500px;
+    width: var(--grid-size);
+    height: var(--grid-size);
 }
 
 #sudoku-root #sudoku-container-grid .sudoku-row, #sudoku-root #sudoku-container-grid .sudoku-cell { 
