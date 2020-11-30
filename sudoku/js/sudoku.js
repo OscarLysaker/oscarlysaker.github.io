@@ -180,7 +180,6 @@ var sudoku = function () {
 
     function GridData (gridSize=GRID_SIZE.NORMAL) {
         this.emptyValue = "0";
-        this.difficulty = DIFFICULTY.EXPERT;
         this.possibleValues = allPossibleValues.slice(0);
         this.setSize = (gridSize) => {
             switch (gridSize) {
@@ -223,12 +222,13 @@ var sudoku = function () {
             this.cellRow.length = 0;
             this.cellColumn.length = 0;
             this.cellGroup.length = 0;
+            var x, y, g, v, s;
             for (var i=0, j=cellArray.length; i<j; i++) {
-                var x = Number(cellArray[i].getAttribute(ATTR.DATA.CELL_X));
-                var y = Number(cellArray[i].getAttribute(ATTR.DATA.CELL_Y));
-                var g = Number(cellArray[i].getAttribute(ATTR.DATA.CELL_GROUP_INDEX));
-                var v = cellArray[i].getAttribute(ATTR.DATA.CELL_VALUE);
-                var s = cellArray[i].getAttribute(ATTR.DATA.CELL_STATE);
+                x = Number(cellArray[i].getAttribute(ATTR.DATA.CELL_X));
+                y = Number(cellArray[i].getAttribute(ATTR.DATA.CELL_Y));
+                g = Number(cellArray[i].getAttribute(ATTR.DATA.CELL_GROUP_INDEX));
+                v = cellArray[i].getAttribute(ATTR.DATA.CELL_VALUE);
+                s = cellArray[i].getAttribute(ATTR.DATA.CELL_STATE);
                 this.cells.push(cellArray[i]);
                 this.cellData.push(new CellData(cellArray[i], i, x, y, g, s, v));
                 while (this.cellRow.length < y+1) this.cellRow.push([]);
@@ -237,6 +237,27 @@ var sudoku = function () {
                 this.cellRow[y].push(this.cellData[i]);
                 this.cellColumn[x].push(this.cellData[i]);
                 this.cellGroup[g].push(this.cellData[i]);
+            }
+        }
+        this.difficulty = DIFFICULTY.EXPERT;
+        var _removePercentage = 0.75;
+        Object.defineProperty(this, 'numsToRemove', { get () { return Math.floor(this.cellsTotal * _removePercentage); }});
+        this.setDifficulty = (difficulty) => {
+            if (difficulty == null) return;
+            this.difficulty = difficulty;
+            switch (this.difficulty) {
+                case DIFFICULTY.EASY:
+                    _removePercentage = 0.5;
+                    break;
+                case DIFFICULTY.MEDIUM:
+                    _removePercentage = 0.6;
+                    break;
+                case DIFFICULTY.HARD:
+                    _removePercentage = 0.7;
+                    break;
+                case DIFFICULTY.EXPERT:
+                default:
+                    _removePercentage = 0.75;
             }
         }
         this.puzzleData = null;
@@ -284,7 +305,7 @@ var sudoku = function () {
         grid.cellData.forEach((cellData) => { cellData.removeData(ATTR.DATA.CELL_START_ANIM); });
 
         var animOffset = 4;
-        var animTotal = 4 * 81 + 400;
+        var animTotal = animOffset * grid.cellsTotal + 400;
         cellTimeouts.push(
             setTimeout(function () {
                 grid.cellData.forEach((cellData) => { cellData.removeData(ATTR.DATA.CELL_START_ANIM); });
@@ -292,7 +313,7 @@ var sudoku = function () {
                 console.log("Started clock...");
             }, animTotal)
         );
-        for (var [index, cellData] of grid.cellData.entries()) {
+        for (var [i, cellData] of grid.cellData.entries()) {
             (function (cellData, value, state, timeout) {
                 cellTimeouts.push(
                     setTimeout(function () {
@@ -452,27 +473,25 @@ var sudoku = function () {
                         if (cd != cellData && cd.state == CELL_STATE.PENCIL && checkCells.indexOf(cd) < 0) checkCells.push(cd);
                     }
 
-                    for (var i=0, j=checkCells.length; i<j; i++) {
+                    for (var [i, checkCell] of checkCells.entries()) {
                         if (String(checkCells[i].value).indexOf(String(tempNewValue)) < 0) continue;
                         
-                        affectedCells.push(checkCells[i]);
-                        previousValues.push(checkCells[i].value);
-                        previousStates.push(checkCells[i].state);
+                        affectedCells.push(checkCell);
+                        previousValues.push(checkCell.value);
+                        previousStates.push(checkCell.state);
 
-                        var valueText = String(checkCells[i].value).replace(String(tempNewValue), "");
+                        var valueText = String(checkCell.value).replace(String(tempNewValue), "");
 
                         if (String(valueText).length == 0) {
                             newValues.push(grid.emptyValue);
                             newStates.push(CELL_STATE.NORMAL);
-
-                            checkCells[i].value = grid.emptyValue;
-                            checkCells[i].state = CELL_STATE.NORMAL;
+                            checkCell.value = grid.emptyValue;
+                            checkCell.state = CELL_STATE.NORMAL;
                         } else {
                             newValues.push(valueText);
                             newStates.push(CELL_STATE.PENCIL);
-
-                            checkCells[i].value = valueText;
-                            checkCells[i].state = CELL_STATE.PENCIL;
+                            checkCell.value = valueText;
+                            checkCell.state = CELL_STATE.PENCIL;
                         }
                     }
                 }
@@ -799,20 +818,11 @@ var sudoku = function () {
                 }
             }
 
-            // Highlight groups
-            for (var i=0, j=groups.length; i<j; i++) {
-                grid.cellGroup[groups[i]].forEach((cd) => { if (!cd.hasData(ATTR.DATA.ERROR)) cd.setData(ATTR.DATA.ERROR, CELL_ERROR.CELL); });
-            }
-
-            // Highlight rows
-            for (var i=0, j=rows.length; i<j; i++) {
-                grid.cellRow[rows[i]].forEach((cd) => { if (!cd.hasData(ATTR.DATA.ERROR)) cd.setData(ATTR.DATA.ERROR, CELL_ERROR.CELL); });
-            }
-
-            // Highlight columns
-            for (var i=0, j=columns.length; i<j; i++) {
-                grid.cellColumn[columns[i]].forEach((cd) => { if (!cd.hasData(ATTR.DATA.ERROR)) cd.setData(ATTR.DATA.ERROR, CELL_ERROR.CELL); });
-            }
+            // Highlight groups, row & columns
+            for (var i=0, j=groups.length; i<j; i++) grid.cellGroup[groups[i]].forEach(setErrorAttr);
+            for (var i=0, j=rows.length; i<j; i++) grid.cellRow[rows[i]].forEach(setErrorAttr);
+            for (var i=0, j=columns.length; i<j; i++) grid.cellColumn[columns[i]].forEach(setErrorAttr);
+            function setErrorAttr (cd) { if (!cd.hasData(ATTR.DATA.ERROR)) cd.setData(ATTR.DATA.ERROR, CELL_ERROR.CELL); }
 
             var gridIndexes=[], errorNums=[];
             for (var cells of checkCells.values()) {
@@ -1206,9 +1216,9 @@ var sudoku = function () {
             // Error variables for tracking failures...
             var error = {
                 indexCounter : 0,
-                maxIndexes : 9,
+                maxIndexes : 2,
                 lineCounter : 0,
-                maxLines : 20,
+                maxLines : 4,
                 resetCounter : 0,
                 maxResets : 500,
 
@@ -1311,13 +1321,22 @@ var sudoku = function () {
                 return null;
             }
 
+            //console.log(`Found index with error count of ${error.totalIndexes} indexes, ${error.totalLines} lines and ${error.totalResets} resets...`);
+
             return tempGrid;
         }
 
-        function newPuzzle (numsToRemove=50) {
+        function newPuzzle (numsToRemove=60) {
+
+            // Get difficulty remove, if it exists
+            if (grid.numsToRemove) numsToRemove = grid.numsToRemove;
 
             // Prepare grid
+            //console.time('FillUnique');
             var solution = uniqueFilled();
+            //console.timeEnd('FillUnique');
+
+            console.time('GenerateNew');
             var tempGrid = solution.slice(0);
 
             var removeGoal = numsToRemove;
@@ -1375,6 +1394,8 @@ var sudoku = function () {
                     }
                 }
             }
+
+            console.timeEnd('GenerateNew');
 
             tempGrid = solution.slice(0);
             for (var i=0, j=changeData.length; i<j; i++) tempGrid[changeData[i].index] = grid.emptyValue;
