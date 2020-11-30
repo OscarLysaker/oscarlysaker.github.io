@@ -1728,9 +1728,8 @@ var sudoku = function () {
             if (isTouch) {
                 this.containerGridElems.table.addEventListener('touchmove', (e) => {
                     e.preventDefault();
-                    var elements = document.elementsFromPoint(e.touches.item(0).clientX, e.touches.item(0).clientY);
-                    for (var i=0, j=elements.length; i<j; i++) {
-                        if (elements[i].getAttribute('class') == ATTR.CLASS.CELL) {
+                    for (var [i, elem] of document.elementsFromPoint(e.touches.item(0).clientX, e.touches.item(0).clientY).entries()) {
+                        if (elem.getAttribute('class') == ATTR.CLASS.CELL) {
                             input.onOverCell(elements[i].getAttribute(ATTR.DATA.CELL_X), elements[i].getAttribute(ATTR.DATA.CELL_Y));
                             return;
                         }
